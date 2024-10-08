@@ -1,0 +1,1 @@
+start "C:\xampp\php\php.exe" -f C:\xampp\htdocs\rcs_bts\resources\views\scheduler.php

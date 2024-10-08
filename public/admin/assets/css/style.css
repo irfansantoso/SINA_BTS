@@ -1,0 +1,56 @@
+.loader-bg {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    z-index: 9999;
+}
+
+.loader-bg .loader-bar {
+    position: fixed;
+    height: 5px;
+    width: 80%;
+    top: 0;
+    left: 0;
+    background: #2196f3;
+    -webkit-animation: barfiller 2s;
+    animation: barfiller 2s;
+}
+
+@-webkit-keyframes barfiller {
+    0% {
+        width: 0
+    }
+    25% {
+        width: 20%
+    }
+    50% {
+        width: 40%
+    }
+    70% {
+        width: 60%
+    }
+    100% {
+        width: 80%
+    }
+}
+
+@keyframes barfiller {
+    0% {
+        width: 0
+    }
+    25% {
+        width: 20%
+    }
+    50% {
+        width: 40%
+    }
+    70% {
+        width: 60%
+    }
+    100% {
+        width: 80%
+    }
+}
