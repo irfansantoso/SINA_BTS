@@ -123,11 +123,19 @@
       <span class="menu-header-text">Forms &amp; Input</span>
     </li>
     <!-- Forms -->
-    <li class="{{ request()->is('employeeHris','employeeHris_add','employeeHris/*') ? 'menu-item active' : 'menu-item' }}">
-      <a href="{{ route('employeeHris') }}" class="menu-link">
-        <i class="menu-icon tf-icons ti ti-friends"></i>
+    <li class="{{ request()->is('journalSina') ? 'menu-item active open' : 'menu-item' }}">
+      <a href="javascript:void(0)" class="menu-link menu-toggle">
+        <i class="menu-icon tf-icons ti ti-table"></i>
         <div data-i18n="Journal">Journal</div>
       </a>
+      <ul class="menu-sub">
+        <li class="{{ request()->is('journalSina') ? 'menu-item active' : 'menu-item' }}">
+          <a href="{{ route('journalSina') }}" class="menu-link">
+            <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
+            <div data-i18n="Journal">Journal</div>
+          </a>
+        </li>        
+      </ul>
     </li> 
 
   </ul>

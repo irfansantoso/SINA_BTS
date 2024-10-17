@@ -12,6 +12,7 @@ use App\Http\Controllers\Tables\DivisionListSinaController;
 use App\Http\Controllers\Tables\CostListSinaController;
 use App\Http\Controllers\Tables\JournalGroupSinaController;
 use App\Http\Controllers\Tables\JournalSourceCodeSinaController;
+use App\Http\Controllers\Forms\JournalSinaController;
 use App\Http\Controllers\Master\EmailReceiverHrisController;
 use App\Http\Controllers\Forms\EmployeeHrisController;
 use App\Http\Controllers\Email\ContractController;
@@ -104,6 +105,16 @@ Route::put('journalSourceCodeSina/update/{id_jsc}', [JournalSourceCodeSinaContro
 Route::delete('journalSourceCodeSina/delete/{id_jsc}', [JournalSourceCodeSinaController::class, 'journalSourceCodeSina_delete'])->name('journalSourceCodeSina.delete');
 
 //GENERAL LEDGER
+
+Route::get('journalSina',[JournalSinaController::class, 'journalSina_browse'])->name('journalSina')->middleware('auth');
+Route::get('journalSina/json', [JournalSinaController::class, 'journalSina_data'])->name('journalSina.data')->middleware('auth');
+Route::post('journalSina', [JournalSinaController::class, 'journalSina_add'])->name('journalSina.add')->middleware('auth');
+Route::get('journalSina/cjgr/{c_jgr}', [JournalSinaController::class, 'journalSina_cjgr'])->name('journalSina.cjgr');
+Route::get('journalSina/jsc/{c_jgr}', [JournalSinaController::class, 'journalSina_jsc'])->name('journalSina.jsc');
+Route::get('journalSina/jsrNo/{c_jgr}/{c_jsr}', [JournalSinaController::class, 'journalSina_jsrNo'])->name('journalSina.jsrNo');
+Route::get('journalSina/{id_jsc}', [JournalSinaController::class, 'journalSina_edit'])->name('journalSina.edit');
+Route::put('journalSina/update/{id_jsc}', [JournalSinaController::class, 'journalSina_update'])->name('journalSina.update');
+Route::delete('journalSina/delete/{id_jsc}', [JournalSinaController::class, 'journalSina_delete'])->name('journalSina.delete');
 
 Route::get('accountingPeriodSina',[AccountingPeriodSinaController::class, 'accountingPeriodSina_browse'])->name('accountingPeriodSina')->middleware('auth');
 Route::get('accountingPeriodSina/json', [AccountingPeriodSinaController::class, 'accountingPeriodSina_data'])->name('accountingPeriodSina.data')->middleware('auth');
