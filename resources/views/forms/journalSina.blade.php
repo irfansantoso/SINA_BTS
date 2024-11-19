@@ -27,7 +27,7 @@
       <div class="col-xxl">
         <div class="card mb-4">
           <div class="card-header d-flex align-items-center justify-content-between">
-            <h5 class="mb-0" id="formTitle">Add Form</h5>            
+            <h5 class="mb-0" id="formTitle">Form Header</h5>            
           </div>
           
             <form id="formAuthentication" class="card-body form-horizontal">
@@ -45,25 +45,97 @@
                     </select>
                 </div>
                 <div class="col-sm-2">
-                    <select class="form-control select2 form-select" name="code_jsr" id="code_jsr" data-allow-clear="true">
+                    <select class="form-control select2 form-select" name="code_jrc" id="code_jrc" data-allow-clear="true">
                         <option value="XX" selected="selected">--</option>
                     </select>
                 </div>
-                <div class="col-sm-2">
-                    <input type="text" class="form-control" id="journal_jrc_no" name="journal_jrc_no" placeholder="Journal Number">
+                <div class="col-sm-2" style="display: flex; align-items: center;">
+                    <span id="cp" style="margin-right: 10px;background-color: orange;color: black;"></span>
+                    <input type="text" style="display: flex; align-items: left;" class="form-control" id="journal_jrc_no" name="journal_jrc_no" placeholder="Journal Number">
+                    <input type="hidden" class="form-control" id="cpx" name="cpx">
                 </div>
               </div>
-              
-
-                            
-              <div class="pt-4">
-                  <button type="button" id="addBtn" class="btn btn-success">Save</button>
-                  <button type="button" id="clear" class="btn btn-warning">Clear</button>
+              <div class="row mb-3">
+                <label class="col-sm-1 col-form-label" for="basic-default-name">Periode</label>
+                <div class="col-sm-1">
+                    <input type="text" class="form-control" id="dt_periode" name="dt_periode" placeholder="Periode" disabled>
+                </div>
+                <label class="col-sm-1 col-form-label" for="additional_notes">Terima Dari</label>
+                <div class="col-sm-8">
+                    <input type="text" class="form-control" id="acceptedBy" name="acceptedBy" placeholder=". . . . . . . . .">
+                </div>                
               </div>
-            </form>
+              <div class="row mb-3">
+                <label class="col-sm-1 col-form-label" for="basic-default-name">Tanggal</label>
+                <div class="col-sm-2">
+                    <input type="date" class="form-control" id="journal_date" name="journal_date">
+                </div> 
+                <label class="col-sm-2 col-form-label text-end" for="basic-default-name">Jatuh Tempo</label>
+                <div class="col-sm-2">
+                    <input type="date" class="form-control" id="due_date" name="due_date">
+                </div>              
+              </div>
+              <div class="pt-1">
+                  <button type="button" id="addBtn" class="btn btn-success">Save Header</button>
+                  <button type="button" id="clear" class="btn btn-warning">Clear</button>
+              </div>                                               
+            </form>            
           
         </div>
       </div> 
+
+      <div class="col-xxl" style="min-width: 100%;">
+        <div class="card mb-4">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <h5 class="mb-0" id="formTitle">Form Detail</h5>            
+          </div>
+                      
+            <form id="formAuthentication_detail" class="card-body form-horizontal" style="overflow-x: auto; white-space: nowrap;">
+                <div class="row g-3 d-flex flex-nowrap">
+                    <div class="col-md-2">
+                        <label class="col-form-label text-end" for="basic-default-name">No. Perkiraan</label>             
+                        <input type="text" data-bs-toggle="modal" data-bs-target="#modAccList" class="form-control" id="account_no" name="account_no" placeholder="Klik here.." readonly>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="col-form-label text-end" for="basic-default-name">Biaya</label>             
+                        <input type="text" data-bs-toggle="modal" data-bs-target="#modCostList" class="form-control" id="code_cost" name="code_cost" placeholder="Klik here.." readonly>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="col-form-label text-end" for="basic-default-name">Nama Perkiraan</label>             
+                        <input type="text" class="form-control" id="account_name" name="account_name" readonly>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="col-form-label text-end" for="basic-default-name">Divisi</label>             
+                        <input type="text" data-bs-toggle="modal" data-bs-target="#modDivList" class="form-control" id="code" name="code" placeholder="Klik here.." readonly>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="col-form-label text-end" for="basic-default-name">Currency</label>             
+                        <input type="text" data-bs-toggle="modal" data-bs-target="#modCurrList" class="form-control" id="code_currency" name="code_currency" placeholder="Klik here.." readonly>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="col-form-label text-end" for="basic-default-name">Debet</label>             
+                        <input type="text" class="form-control" id="debet" name="debet">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="col-form-label text-end" for="basic-default-name">Kredit</label>             
+                        <input type="text" class="form-control" id="kredit" name="kredit">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="col-form-label text-end" for="basic-default-name">Kurs</label>             
+                        <input type="text" class="form-control" id="kurs" name="kurs">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="col-form-label text-end" for="basic-default-name">Jumlah Total</label>             
+                        <input type="text" class="form-control" id="jumlah_total" name="jumlah_total">
+                    </div>
+                </div>
+                <div class="pt-1">
+                  <button type="button" id="addBtnDetail" class="btn btn-success">Save Detail</button>
+                  <button type="button" id="clearDetail" class="btn btn-warning">Clear</button>
+                </div>                
+            </form>
+        </div>
+      </div>
 
 
       <div class="col-xxl" style="min-width: 100%;">
@@ -107,6 +179,101 @@
                             <th>Account No</th>
                             <th>Account Name</th>
                             <th>Type</th>
+                            <th>Action</th>
+                          </tr>
+                          </thead>
+                        </table>
+                      </div>
+                    </div>                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal HTML -->
+    <div class="modal fade" id="modCostList" tabindex="-1" aria-labelledby="modCostList" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 50%;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="costListModalLabel">Cost List</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="card">
+                      <!-- /.card-header -->
+                      <div class="card-datatable text-nowrap">
+                        <table id="costTable" class="datatables-ajax table-striped">
+                          <thead>
+                          <tr>
+                            <th width="15px">No.</th>
+                            <th>Code</th>
+                            <th>Code Description</th>
+                            <th>Category</th>
+                            <th>Action</th>
+                          </tr>
+                          </thead>
+                        </table>
+                      </div>
+                    </div>                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal HTML -->
+    <div class="modal fade" id="modDivList" tabindex="-1" aria-labelledby="modDivList" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 50%;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="divListModalLabel">Cost List</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="card">
+                      <!-- /.card-header -->
+                      <div class="card-datatable text-nowrap">
+                        <table id="divTable" class="datatables-ajax table-striped">
+                          <thead>
+                          <tr>
+                            <th width="15px">No.</th>
+                            <th>Code</th>
+                            <th>Division Name</th>
+                            <th>Category</th>
+                            <th>Action</th>
+                          </tr>
+                          </thead>
+                        </table>
+                      </div>
+                    </div>                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal HTML -->
+    <div class="modal fade" id="modCurrList" tabindex="-1" aria-labelledby="modCurrList" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 50%;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="currListModalLabel">Cost List</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="card">
+                      <!-- /.card-header -->
+                      <div class="card-datatable text-nowrap">
+                        <table id="currTable" class="datatables-ajax table-striped">
+                          <thead>
+                          <tr>
+                            <th width="15px">No.</th>
+                            <th>Code Currency</th>
+                            <th>Currency Description</th>
                             <th>Action</th>
                           </tr>
                           </thead>
@@ -173,26 +340,55 @@ $(document).ready(function() {
         resetFormAndButton();
     });
 
+    $('#addBtnDetail').on('click', function(event) {
+        event.preventDefault();
+        addDetailJournalSina();
+    });
+
+    $('#clearDetail').on('click', function(event) {
+        resetDetailFormAndButton();
+    });
+
     $('#code_jgr').on('change', function(event) {
         event.preventDefault();
         c_jgr = $('#code_jgr').val();
          
         showJSC(c_jgr);
-        table.ajax.reload(); // Reload data table saat dropdown berubah       
+        // table.ajax.reload(); // Reload data table saat dropdown berubah       
         // alert(c_jgr);
     });
 
-    $('#code_jsr').on('change', function(event) {
+    $('#code_jrc').on('change', function(event) {
         event.preventDefault();
         c_jgr = $('#code_jgr').val();
-        c_jsr = $('#code_jsr').val();
+        c_jrc = $('#code_jrc').val();
          
-        showJsrNo(c_jgr,c_jsr);
-        table.ajax.reload(); // Reload data table saat dropdown berubah       
+        showJsrNo(c_jgr,c_jrc);
+        // table.ajax.reload(); // Reload data table saat dropdown berubah       
         // alert(c_jgr);
     });
 
+    $('#journal_jrc_no').on('input', function(event) {
+        event.preventDefault();
+        j_jrc_no = $('#journal_jrc_no').val();
+        c_jgr = $('#code_jgr').val();
+        c_jrc = $('#code_jrc').val();
+
+         
+        setFormByHeader(j_jrc_no,c_jgr,c_jrc);
+        table.ajax.reload(); // Reload data table saat dropdown berubah       
+        
+    });    
+
     $('#modAccList').on('shown.bs.modal', function () {
+        $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+    });
+
+    $('#modCostList').on('shown.bs.modal', function () {
+        $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+    });
+
+    $('#modDivList').on('shown.bs.modal', function () {
         $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
     });
 
@@ -232,6 +428,107 @@ $(document).ready(function() {
     });
 });
 
+var table_modCost;
+$(document).ready(function() {
+    table_modCost = $('#costTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: '{!! route('costListSina.data') !!}',
+        columns: [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'code_cost', name: 'code_cost' },
+            { data: 'cost_description', name: 'cost_description' },
+            { data: 'cost_category', name: 'cost_category' },
+            {
+                data: 'action',
+                render: function (data, type, row, meta) {
+                    return (
+                        `<a href="javascript:;" onclick="getCostDetail('${row.code_cost}', '${row.cost_description}')" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-warning" title="Pick" class="btn btn-sm btn-icon item-edit"><i class="text-warning ti ti-check"></i></a>`
+                    );
+                },
+                orderable: false, searchable: false
+            }
+        ],
+        drawCallback: function(settings) {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    customClass: tooltipTriggerEl.getAttribute('data-bs-custom-class') || ''
+                });
+            });
+        },
+        scrollX: true,
+        order: [[1, 'asc']]
+    });
+});
+
+var table_modDiv;
+$(document).ready(function() {
+    table_modDiv = $('#divTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: '{!! route('divisionListSina.data') !!}',
+        columns: [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'code', name: 'code' },
+            { data: 'division_name', name: 'division_name' },
+            { data: 'category', name: 'category' },
+            {
+                data: 'action',
+                render: function (data, type, row, meta) {
+                    return (
+                        `<a href="javascript:;" onclick="getDivDetail('${row.code}', '${row.division_name}')" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-warning" title="Pick" class="btn btn-sm btn-icon item-edit"><i class="text-warning ti ti-check"></i></a>`
+                    );
+                },
+                orderable: false, searchable: false
+            }
+        ],
+        drawCallback: function(settings) {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    customClass: tooltipTriggerEl.getAttribute('data-bs-custom-class') || ''
+                });
+            });
+        },
+        scrollX: true,
+        order: [[1, 'asc']]
+    });
+});
+
+var table_modCurr;
+$(document).ready(function() {
+    table_modDiv = $('#currTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: '{!! route('currencySina.data') !!}',
+        columns: [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'code_currency', name: 'code_currency' },
+            { data: 'currency_description', name: 'currency_description' },
+            {
+                data: 'action',
+                render: function (data, type, row, meta) {
+                    return (
+                        `<a href="javascript:;" onclick="getCurrDetail('${row.code_currency}', '${row.currency_description}')" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-warning" title="Pick" class="btn btn-sm btn-icon item-edit"><i class="text-warning ti ti-check"></i></a>`
+                    );
+                },
+                orderable: false, searchable: false
+            }
+        ],
+        drawCallback: function(settings) {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    customClass: tooltipTriggerEl.getAttribute('data-bs-custom-class') || ''
+                });
+            });
+        },
+        scrollX: true,
+        order: [[1, 'asc']]
+    });
+});
+
 function getAccountDetail(account_no, account_name) {
     // Isi field 'account_no' dan 'account_name' di form
     $('#account_no').val(account_no);
@@ -239,6 +536,33 @@ function getAccountDetail(account_no, account_name) {
 
     // Tutup modal menggunakan Bootstrap modal API
     $('#modAccList').modal('hide');
+}
+
+function getCostDetail(code_cost, cost_description) {
+    // Isi field 'account_no' dan 'account_name' di form
+    $('#code_cost').val(code_cost);
+    $('#cost_description').val(cost_description);
+
+    // Tutup modal menggunakan Bootstrap modal API
+    $('#modCostList').modal('hide');
+}
+
+function getDivDetail(code, division_name) {
+    // Isi field 'account_no' dan 'account_name' di form
+    $('#code').val(code);
+    $('#division_name').val(division_name);
+
+    // Tutup modal menggunakan Bootstrap modal API
+    $('#modDivList').modal('hide');
+}
+
+function getCurrDetail(code_currency, currency_description) {
+    // Isi field 'account_no' dan 'account_name' di form
+    $('#code_currency').val(code_currency);
+    $('#currency_description').val(currency_description);
+
+    // Tutup modal menggunakan Bootstrap modal API
+    $('#modCurrList').modal('hide');
 }
 
 function showDetJG(c_jgr) {
@@ -262,14 +586,14 @@ function showJSC(c_jgr) {
         type: 'GET',
         success: function(journalSina) {
             // Populate form fields with the user's data
-            $('#code_jsr').empty();
+            $('#code_jrc').empty();
 
             // Add the default option
-            $('#code_jsr').append('<option value="XX" selected="selected">--</option>');
+            $('#code_jrc').append('<option value="XX" selected="selected">--</option>');
 
-            // Populate the #code_jsr dropdown with the returned data
+            // Populate the #code_jrc dropdown with the returned data
             $.each(journalSina, function(index, value) {
-                $('#code_jsr').append(`<option value="${value.code_jrc}">${value.code_jrc}</option>`);
+                $('#code_jrc').append(`<option value="${value.code_jrc}">${value.code_jrc}</option>`);
             });
         },
         error: function(xhr) {
@@ -278,15 +602,60 @@ function showJSC(c_jgr) {
     });
 }
 
-function showJsrNo(c_jgr,c_jsr) {
+function showJsrNo(c_jgr,c_jrc) {
     $.ajax({
-        url: `journalSina/jsrNo/${c_jgr}/${c_jsr}`, // Fetch data by code
+        url: `journalSina/jsrNo/${c_jgr}/${c_jrc}`, // Fetch data by code
         type: 'GET',
-        success: function(jsrNo) { 
-            // alert(journalSina.jsrNo);        
-            $('#journal_jrc_no').val(jsrNo).focus();
+        success: function(response) { 
+            // alert(response.jsrNo);        
+            $('#cp').text(response.cp);
+            $('#cpx').val(response.cp);
+            $('#journal_jrc_no').val(response.jsrNo).focus();
+            $('#dt_periode').val(response.dt_periode);
         },
         error: function(xhr) {
+            alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
+        }
+    });
+}
+
+function setFormByHeader(j_jrc_no, c_jgr, c_jrc) {
+    $.ajax({
+        url: `journalSina/setFormByHeader/${j_jrc_no}/${c_jgr}/${c_jrc}`, // Fetch data by code
+        type: 'GET',
+        success: function(response) {
+            if (response.status === 'success') {
+                const data = response.data;
+
+                // Isi nilai ke input form
+                $('#journal_date').val(data.journal_date);
+                $('#due_date').val(data.due_date);
+                $('#acceptedBy').val(data.description);
+
+                // Jika description tidak kosong, ubah ke mode edit
+                if (data.description !== "") {
+                    $('#formAuthentication').attr('action', `journalSourceCodeSina/update/${j_jrc_no}`);
+                    $('#formTitle').text('Edit Form');
+                    $('#addBtn').text('Edit');
+                    $('#formMethod').val('PUT');
+
+                    // Ubah event tombol untuk proses update
+                    $('#addBtn').off('click').on('click', function(event) {
+                        event.preventDefault();
+                        updateJournalSourceCode(j_jrc_no); // Sesuaikan dengan parameter yang benar
+                    });
+                } else {
+                    // Mode tambah
+                    $('#addBtn').text('Simpan');
+                }
+            } else {
+                // Tampilkan pesan error dari respons server
+                // alert(response.message);
+                $('#addBtn').text('Simpan');
+            }
+        },
+        error: function(xhr) {
+            // Tampilkan pesan error saat AJAX gagal
             alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
         }
     });
@@ -302,10 +671,14 @@ document.addEventListener('click', function (e) {
 
 function addJournalSina() {
     var code_jgr = $('#code_jgr').val();
-    var code_jsr = $('#code_jsr').val();
+    var code_jrc = $('#code_jrc').val();
     var journal_jrc_no = $('#journal_jrc_no').val();
+    var cpx = $('#cpx').val();
+    var acceptedBy = $('#acceptedBy').val();
+    var journal_date = $('#journal_date').val();
+    var due_date = $('#due_date').val();
 
-    if (code_jgr === '' || code_jsr === '' || journal_jrc_no === '') {
+    if (code_jgr === '' || code_jrc === '' || journal_jrc_no === '') {
         Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -324,16 +697,16 @@ function addJournalSina() {
         data: {
             _token: '{{ csrf_token() }}',
             code_jgr: code_jgr,
-            code_jsr: code_jsr,
-            journal_jrc_no: journal_jrc_no
+            code_jrc: code_jrc,
+            journal_jrc_no: journal_jrc_no,
+            cpx: cpx,
+            acceptedBy: acceptedBy,
+            journal_date: journal_date,
+            due_date: due_date
         },
-        success: function(response) {
-            // Reset input fields
-            $('#code_jgr').val('').focus();
-            $('#code_jsr').val('').focus();
-            $('#journal_jrc_no').val('');
+        success: function(response) {            
 
-
+            // $('#journal_jrc_no').val(response.journal_jrc_no);
             // Reload table without resetting pagination
             table.ajax.reload(null, false);
 
@@ -349,7 +722,7 @@ function addJournalSina() {
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    resetFormAndButton();
+                    // resetFormAndButton();
                 }
             }); 
         },

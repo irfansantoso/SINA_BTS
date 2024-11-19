@@ -73,28 +73,69 @@ class JournalSinaController extends Controller
         return response()->json($getDataJSC);
     }
 
-    public function journalSina_jsrNo($c_jgr,$c_jsr)
+    public function journalSina_jsrNo($c_jgr,$c_jrc)
     {        
-        $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
+        $getYearActive = TempAccountingPeriodSinaModel::select('year','month','code_period')
                                 ->where('user_acc_period', Auth::user()->username)
-                                ->first(); // Fetch a single record
+                                ->first(); // Fetch a single record        
+
         $cp = $getYearActive->code_period;
+        $dt_periode = $getYearActive->month."/".$getYearActive->year;
 
         $getDataJsrNo = JournalHeaderSinaModel::select('journal_jrc_no')
                                 ->where('code_jgr', $c_jgr)
-                                ->where('code_jrc', $c_jsr)
+                                ->where('code_jrc', $c_jrc)
                                 ->where('code_period', $cp)
-                                ->first(); // Fetch a single record  
+                                ->orderBy('id_journal_head', 'desc')
+                                ->first(); // Fetch a single record
         if(!empty($getDataJsrNo)){
-            $nourut = substr($getDataJsrNo, 0, 4);
-            $nourut++;            
-            $newNo2 = sprintf("%04s", $nourut)."/";
-            $jsrNo = $cp.$newNo2;
+            $lastNumber  = substr($getDataJsrNo, -4);
+            $nourut = (int)$lastNumber + 1;            
+            $newNo = sprintf("%04d", $nourut);
+            $jsrNo = $newNo;            
         }else{
-            $jsrNo = $cp.'0001';
+            $jsrNo = '0001';
         }      
         
-        return response()->json($jsrNo);
+        return response()->json(['cp' => $cp, 'jsrNo' => $jsrNo, 'dt_periode' => $dt_periode]);
+    }
+
+    public function journalSina_setFormByHeader($j_jrc_no,$c_jgr,$c_jrc)
+    {        
+        $getYearActive = TempAccountingPeriodSinaModel::select('year','month','code_period')
+                                ->where('user_acc_period', Auth::user()->username)
+                                ->first(); // Fetch a single record        
+
+        // if (!$getYearActive) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'Data periode aktif tidak ditemukan.',
+        //     ], 404);
+        // }
+        
+        $cp = $getYearActive->code_period;
+        $dt_periode = $getYearActive->month."/".$getYearActive->year;
+        $jjrc_no = $cp.$j_jrc_no;
+
+        $getDataSetFormByHeader = JournalHeaderSinaModel::select('journal_date','due_date','description')
+                                ->where('code_jgr', $c_jgr)
+                                ->where('code_jrc', $c_jrc)
+                                ->where('journal_jrc_no', $jjrc_no)
+                                ->first(); // Fetch a single record  
+
+        if (!$getDataSetFormByHeader) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data journal header tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $getDataSetFormByHeader,
+            'periode' => $dt_periode, // Tambahkan informasi tambahan jika diperlukan
+        ]);
+            
     }
 
     public function journalSina_add(Request $request)
@@ -103,11 +144,20 @@ class JournalSinaController extends Controller
         //     'account_no' => 'required|unique:tb_account_list',
         //     'account_name' => 'required'
         // ]);
+        $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
+                                ->where('user_acc_period', Auth::user()->username)
+                                ->first(); // Fetch a single record
+        $cp = $getYearActive->code_period;
 
+        $no_jjrc = $request->cpx.$request->journal_jrc_no;
         $journalHeaderSina = new JournalHeaderSinaModel([
             'code_jgr' => $request->code_jgr,
-            'code_jsr' => $request->code_jsr,
-            'journal_jrc_no' => $request->journal_jrc_no,
+            'code_jrc' => $request->code_jrc,
+            'journal_jrc_no' => $no_jjrc,                    
+            'code_period' => $request->cpx,
+            'journal_date' => $request->journal_date,
+            'due_date' => $request->due_date,
+            'description' => $request->acceptedBy,
             'created_by' => Auth::user()->name
         ]);
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Homepage\DashboardHrisController;
 use App\Http\Controllers\Master\SiteHrisController;
 use App\Http\Controllers\Master\DepartmentHrisController;
 use App\Http\Controllers\Master\AccountTypeSinaController;
+use App\Http\Controllers\Master\CurrencySinaController;
 use App\Http\Controllers\Gl\AccountingPeriodSinaController;
 use App\Http\Controllers\Tables\AccountListSinaController;
 use App\Http\Controllers\Tables\DivisionListSinaController;
@@ -66,6 +67,13 @@ Route::get('accountTypeSina/{id}', [AccountTypeSinaController::class, 'accountTy
 Route::put('accountTypeSina/update/{id}', [AccountTypeSinaController::class, 'accountTypeSina_update'])->name('accountTypeSina.update');
 Route::delete('accountTypeSina/delete/{id}', [AccountTypeSinaController::class, 'accountTypeSina_delete'])->name('accountTypeSina.delete');
 
+Route::get('currencySina',[CurrencySinaController::class, 'currencySina_browse'])->name('currencySina')->middleware('auth');
+Route::get('currencySina/json', [CurrencySinaController::class, 'currencySina_data'])->name('currencySina.data')->middleware('auth');
+Route::post('currencySina', [CurrencySinaController::class, 'currencySina_add'])->name('currencySina.add')->middleware('auth');
+Route::get('currencySina/{id}', [CurrencySinaController::class, 'currencySina_edit'])->name('currencySina.edit');
+Route::put('currencySina/update/{id}', [CurrencySinaController::class, 'currencySina_update'])->name('currencySina.update');
+Route::delete('currencySina/delete/{id}', [CurrencySinaController::class, 'currencySina_delete'])->name('currencySina.delete');
+
 //TABLES
 
 Route::get('accountListSina',[AccountListSinaController::class, 'accountListSina_browse'])->name('accountListSina')->middleware('auth');
@@ -111,7 +119,8 @@ Route::get('journalSina/json', [JournalSinaController::class, 'journalSina_data'
 Route::post('journalSina', [JournalSinaController::class, 'journalSina_add'])->name('journalSina.add')->middleware('auth');
 Route::get('journalSina/cjgr/{c_jgr}', [JournalSinaController::class, 'journalSina_cjgr'])->name('journalSina.cjgr');
 Route::get('journalSina/jsc/{c_jgr}', [JournalSinaController::class, 'journalSina_jsc'])->name('journalSina.jsc');
-Route::get('journalSina/jsrNo/{c_jgr}/{c_jsr}', [JournalSinaController::class, 'journalSina_jsrNo'])->name('journalSina.jsrNo');
+Route::get('journalSina/jsrNo/{c_jgr}/{c_jrc}', [JournalSinaController::class, 'journalSina_jsrNo'])->name('journalSina.jsrNo');
+Route::get('journalSina/setFormByHeader/{j_jrc_no}/{c_jgr}/{c_jrc}', [JournalSinaController::class, 'journalSina_setFormByHeader'])->name('journalSina.setFormByHeader');
 Route::get('journalSina/{id_jsc}', [JournalSinaController::class, 'journalSina_edit'])->name('journalSina.edit');
 Route::put('journalSina/update/{id_jsc}', [JournalSinaController::class, 'journalSina_update'])->name('journalSina.update');
 Route::delete('journalSina/delete/{id_jsc}', [JournalSinaController::class, 'journalSina_delete'])->name('journalSina.delete');
