@@ -122,7 +122,7 @@ Route::get('journalSina/jsc/{c_jgr}', [JournalSinaController::class, 'journalSin
 Route::get('journalSina/jsrNo/{c_jgr}/{c_jrc}', [JournalSinaController::class, 'journalSina_jsrNo'])->name('journalSina.jsrNo');
 Route::get('journalSina/setFormByHeader/{j_jrc_no}/{c_jgr}/{c_jrc}', [JournalSinaController::class, 'journalSina_setFormByHeader'])->name('journalSina.setFormByHeader');
 Route::get('journalSina/{id_jsc}', [JournalSinaController::class, 'journalSina_edit'])->name('journalSina.edit');
-Route::put('journalSina/update/{id_jsc}', [JournalSinaController::class, 'journalSina_update'])->name('journalSina.update');
+Route::put('journalSina/update/{j_jrc_no}/{c_jgr}/{c_jrc}', [JournalSinaController::class, 'journalSina_update'])->name('journalSina.update');
 Route::delete('journalSina/delete/{id_jsc}', [JournalSinaController::class, 'journalSina_delete'])->name('journalSina.delete');
 
 Route::get('accountingPeriodSina',[AccountingPeriodSinaController::class, 'accountingPeriodSina_browse'])->name('accountingPeriodSina')->middleware('auth');

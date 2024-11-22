@@ -22,9 +22,13 @@ class JournalSinaController extends Controller
     {   
         $journalGroupSina= JournalGroupSinaModel::all();
 
-        $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
-                                ->where('user_acc_period', Auth::user()->username)
-                                ->first(); // Fetch a single record
+        if (Auth::check()) {
+            $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
+                                    ->where('user_acc_period', Auth::user()->username)
+                                    ->first(); // Fetch a single record
+        } else {
+            return redirect()->route('login');
+        }
         $syear = $getYearActive->year;
 
         // Check if a record was found
@@ -106,21 +110,21 @@ class JournalSinaController extends Controller
                                 ->where('user_acc_period', Auth::user()->username)
                                 ->first(); // Fetch a single record        
 
-        // if (!$getYearActive) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'Data periode aktif tidak ditemukan.',
-        //     ], 404);
-        // }
+        if (!$getYearActive) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data periode aktif tidak ditemukan.',
+            ], 404);
+        }
         
         $cp = $getYearActive->code_period;
         $dt_periode = $getYearActive->month."/".$getYearActive->year;
-        $jjrc_no = $cp.$j_jrc_no;
+        // $jjrc_no = $cp.$j_jrc_no;
 
         $getDataSetFormByHeader = JournalHeaderSinaModel::select('journal_date','due_date','description')
                                 ->where('code_jgr', $c_jgr)
                                 ->where('code_jrc', $c_jrc)
-                                ->where('journal_jrc_no', $jjrc_no)
+                                ->where('journal_jrc_no', $j_jrc_no)
                                 ->first(); // Fetch a single record  
 
         if (!$getDataSetFormByHeader) {
@@ -157,7 +161,7 @@ class JournalSinaController extends Controller
             'code_period' => $request->cpx,
             'journal_date' => $request->journal_date,
             'due_date' => $request->due_date,
-            'description' => $request->acceptedBy,
+            'description' => $request->description,
             'created_by' => Auth::user()->name
         ]);
 
@@ -175,33 +179,26 @@ class JournalSinaController extends Controller
         return response()->json($journalSourceCodeSina);
     }
 
-    public function journalSina_update(Request $request, $id_jsc)
+    public function journalSina_update(Request $request, $j_jrc_no,$c_jgr,$c_jrc)
     {
-        // Validate the incoming request
-        // $request->validate([
-        //     'account_no' => 'required',
-        //     'account_name' => 'required'
-        // ]);
 
-        // Find the AccountListSinaModel by ID
-        $journalSourceCodeSina = JournalSourceCodeSinaModel::findOrFail($id_jsc);
+        $journalSinaUpdate = JournalHeaderSinaModel::where('journal_jrc_no', $j_jrc_no)
+                                                    ->where('code_jgr', $c_jgr)
+                                                    ->where('code_jrc', $c_jrc)
+                                                    ->firstOrFail();
 
         // Update the user's details
-        $journalSourceCodeSina->code_jgr = $request->input('code_jgr');
-        $journalSourceCodeSina->deb_cre = $request->input('deb_cre');
-        $journalSourceCodeSina->year = $request->input('year');
-        $journalSourceCodeSina->code_jrc = $request->input('code_jrc');
-        $journalSourceCodeSina->journal_jrc_no = $request->input('journal_jrc_no');
-        $journalSourceCodeSina->account_no = $request->input('account_no');
-        $journalSourceCodeSina->account_name = $request->input('account_name');        
+        $journalSinaUpdate->journal_date = $request->input('journal_date');
+        $journalSinaUpdate->due_date = $request->input('due_date');
+        $journalSinaUpdate->description = $request->input('description');      
 
-        // Save the updated journalSourceCodeSinaModel 
-        $journalSourceCodeSina->save();
+        // Save the updated journalSinaUpdateModel 
+        $journalSinaUpdate->save();
 
         // Return a success response
         return response()->json([
             'message' => 'Ubah Data successfully',
-            'user' => $journalSourceCodeSina,
+            'data' => $journalSinaUpdate,
         ]);
     }
 

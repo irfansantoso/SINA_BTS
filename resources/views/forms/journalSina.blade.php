@@ -62,7 +62,7 @@
                 </div>
                 <label class="col-sm-1 col-form-label" for="additional_notes">Terima Dari</label>
                 <div class="col-sm-8">
-                    <input type="text" class="form-control" id="acceptedBy" name="acceptedBy" placeholder=". . . . . . . . .">
+                    <input type="text" class="form-control" id="description" name="description" placeholder=". . . . . . . . .">
                 </div>                
               </div>
               <div class="row mb-3">
@@ -84,7 +84,7 @@
         </div>
       </div> 
 
-      <div class="col-xxl" style="min-width: 100%;">
+      <div class="col-xxl form-detail" style="min-width: 100%; display: none;">
         <div class="card mb-4">
           <div class="card-header d-flex align-items-center justify-content-between">
             <h5 class="mb-0" id="formTitle">Form Detail</h5>            
@@ -354,6 +354,12 @@ $(document).ready(function() {
         c_jgr = $('#code_jgr').val();
          
         showJSC(c_jgr);
+        $('.form-detail').hide();
+        $('#journal_jrc_no').val("");
+        $('#dt_periode').val("");
+        $('#journal_date').val("");        
+        $('#due_date').val("");
+        $('#description').val("");
         // table.ajax.reload(); // Reload data table saat dropdown berubah       
         // alert(c_jgr);
     });
@@ -364,6 +370,10 @@ $(document).ready(function() {
         c_jrc = $('#code_jrc').val();
          
         showJsrNo(c_jgr,c_jrc);
+        $('.form-detail').show();
+        $('#journal_date').val("");
+        $('#due_date').val("");
+        $('#description').val("");
         // table.ajax.reload(); // Reload data table saat dropdown berubah       
         // alert(c_jgr);
     });
@@ -620,8 +630,11 @@ function showJsrNo(c_jgr,c_jrc) {
 }
 
 function setFormByHeader(j_jrc_no, c_jgr, c_jrc) {
+    var cpx = $('#cpx').val();
+    var jjrc_no = cpx+j_jrc_no;
+
     $.ajax({
-        url: `journalSina/setFormByHeader/${j_jrc_no}/${c_jgr}/${c_jrc}`, // Fetch data by code
+        url: `journalSina/setFormByHeader/${jjrc_no}/${c_jgr}/${c_jrc}`, // Fetch data by code
         type: 'GET',
         success: function(response) {
             if (response.status === 'success') {
@@ -630,33 +643,41 @@ function setFormByHeader(j_jrc_no, c_jgr, c_jrc) {
                 // Isi nilai ke input form
                 $('#journal_date').val(data.journal_date);
                 $('#due_date').val(data.due_date);
-                $('#acceptedBy').val(data.description);
+                $('#description').val(data.description);
 
-                // Jika description tidak kosong, ubah ke mode edit
-                if (data.description !== "") {
-                    $('#formAuthentication').attr('action', `journalSourceCodeSina/update/${j_jrc_no}`);
-                    $('#formTitle').text('Edit Form');
-                    $('#addBtn').text('Edit');
-                    $('#formMethod').val('PUT');
 
-                    // Ubah event tombol untuk proses update
-                    $('#addBtn').off('click').on('click', function(event) {
-                        event.preventDefault();
-                        updateJournalSourceCode(j_jrc_no); // Sesuaikan dengan parameter yang benar
-                    });
-                } else {
-                    // Mode tambah
-                    $('#addBtn').text('Simpan');
-                }
+                $('#formAuthentication').attr('action', `journalSina/update/${jjrc_no}/${c_jgr}/${c_jrc}`);
+                $('#formTitle').text('Edit Form');
+                $('#addBtn').text('Edit');
+
+                $('#formMethod').val('PUT');
+
+                // Ubah event tombol untuk proses update
+                $('#addBtn').off('click').on('click', function(event) {
+                    event.preventDefault();
+                    updateJournalSina(jjrc_no,c_jgr,c_jrc);
+                });
+
             } else {
                 // Tampilkan pesan error dari respons server
-                // alert(response.message);
-                $('#addBtn').text('Simpan');
+                alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
             }
         },
         error: function(xhr) {
             // Tampilkan pesan error saat AJAX gagal
-            alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
+            $('#formMethod').val('POST');
+            $('#formTitle').text('Form Header');
+            $('#journal_date').val("");
+            $('#due_date').val("");
+            $('#description').val("");
+
+            $('#addBtn').off('click').on('click', function(event) {
+                event.preventDefault();
+                addJournalSina();
+            });
+
+            $('#addBtn').text('Save Header');
+            // alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
         }
     });
 }
@@ -674,7 +695,7 @@ function addJournalSina() {
     var code_jrc = $('#code_jrc').val();
     var journal_jrc_no = $('#journal_jrc_no').val();
     var cpx = $('#cpx').val();
-    var acceptedBy = $('#acceptedBy').val();
+    var description = $('#description').val();
     var journal_date = $('#journal_date').val();
     var due_date = $('#due_date').val();
 
@@ -700,7 +721,7 @@ function addJournalSina() {
             code_jrc: code_jrc,
             journal_jrc_no: journal_jrc_no,
             cpx: cpx,
-            acceptedBy: acceptedBy,
+            description: description,
             journal_date: journal_date,
             due_date: due_date
         },
@@ -748,73 +769,63 @@ function addJournalSina() {
     });
 } 
 
-function editJournalSourceCode(id_jsc) {
-    $.ajax({
-        url: `journalSourceCodeSina/${id_jsc}`, // Fetch user data by ID
-        type: 'GET',
-        success: function(journalSourceCodeSina) {
-            // Populate form fields with the user's data
-            $('#code_jgr').val(journalSourceCodeSina.code_jgr).trigger('change');
-            $('#deb_cre').val(journalSourceCodeSina.deb_cre);
-            $('#year').val(journalSourceCodeSina.year);
-            $('#code_jrc').val(journalSourceCodeSina.code_jrc).focus();
-            $('#journal_jrc_no').val(journalSourceCodeSina.journal_jrc_no);
-            $('#account_no').val(journalSourceCodeSina.account_no);
-            $('#account_name').val(journalSourceCodeSina.account_name);
+// function editJournalSourceCode(id_jsc) {
+//     $.ajax({
+//         url: `journalSourceCodeSina/${id_jsc}`, // Fetch user data by ID
+//         type: 'GET',
+//         success: function(journalSourceCodeSina) {
+//             // Populate form fields with the user's data
+//             $('#code_jgr').val(journalSourceCodeSina.code_jgr).trigger('change');
+//             $('#deb_cre').val(journalSourceCodeSina.deb_cre);
+//             $('#year').val(journalSourceCodeSina.year);
+//             $('#code_jrc').val(journalSourceCodeSina.code_jrc).focus();
+//             $('#journal_jrc_no').val(journalSourceCodeSina.journal_jrc_no);
+//             $('#account_no').val(journalSourceCodeSina.account_no);
+//             $('#account_name').val(journalSourceCodeSina.account_name);
 
-            // Change background color to yellow
-            $('#deb_cre, #year, #code_jrc, #journal_jrc_no, #account_no, #account_name').css('background-color', '#FFFF99');
-            $('#code_jgr').css('background', '#FFFF99');
+//             // Change background color to yellow
+//             $('#deb_cre, #year, #code_jrc, #journal_jrc_no, #account_no, #account_name').css('background-color', '#FFFF99');
+//             $('#code_jgr').css('background', '#FFFF99');
 
-            // Change the form action to update the user and the button text
-            $('#formAuthentication').attr('action', `journalSourceCodeSina/update/${id_jsc}`);
-            $('#formTitle').text('Edit Form');
-            $('#addBtn').text('Edit');
+//             // Change the form action to update the user and the button text
+//             $('#formAuthentication').attr('action', `journalSourceCodeSina/update/${id_jsc}`);
+//             $('#formTitle').text('Edit Form');
+//             $('#addBtn').text('Edit');
 
-            $('#formMethod').val('PUT');
+//             $('#formMethod').val('PUT');
 
-            // Change the button's click event to trigger an update instead of a create
-            $('#addBtn').off('click').on('click', function(event) {
-                event.preventDefault();
-                updateJournalSourceCode(id_jsc);
-            });
-        },
-        error: function(xhr) {
-            alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
-        }
-    });
-}
+//             // Change the button's click event to trigger an update instead of a create
+//             $('#addBtn').off('click').on('click', function(event) {
+//                 event.preventDefault();
+//                 updateJournalSourceCode(id_jsc);
+//             });
+//         },
+//         error: function(xhr) {
+//             alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
+//         }
+//     });
+// }
 
-function updateJournalSourceCode(id_jsc) {
-    var code_jgr = $('#code_jgr').val();
-    var deb_cre = $('#deb_cre').val();
-    var year = $('#year').val();
-    var code_jrc = $('#code_jrc').val();
-    var journal_jrc_no = $('#journal_jrc_no').val();
-    var account_no = $('#account_no').val();
-    var account_name = $('#account_name').val();
+function updateJournalSina(j_jrc_no,c_jgr,c_jrc) {
+    var description = $('#description').val();
+    var journal_date = $('#journal_date').val();
+    var due_date = $('#due_date').val();
 
     $.ajax({
-        url: `journalSourceCodeSina/update/${id_jsc}`, // Update route
+        url: `journalSina/update/${j_jrc_no}/${c_jgr}/${c_jrc}`, // Update route
         type: 'POST',  // Use POST method
         data: {
             _method: 'PUT',  // Spoof method to PUT
             _token: '{{ csrf_token() }}',
-            code_jgr: code_jgr,
-            deb_cre: deb_cre,
-            year: year,
-            code_jrc: code_jrc,
-            journal_jrc_no: journal_jrc_no,
-            account_no: account_no,
-            account_name: account_name
+            description: description,
+            journal_date: journal_date,
+            due_date: due_date
             
         },
-        success: function(journalSourceCodeSina) {
-            // Reset form fields
-            $('#code_jrc').val('').focus();
-            $('#journal_jrc_no').val('');
-            $('#account_no').val('');
-            $('#account_name').val('');            
+        success: function(journalSinaUpdate) {
+            // // Reset form fields
+            // $('#code_jrc').val('').focus();
+            // $('#journal_jrc_no').val('');       
 
             // Reload table and revert button text
             table.ajax.reload(null, false);
@@ -827,23 +838,24 @@ function updateJournalSourceCode(id_jsc) {
                 },
                 buttonsStyling: false
             });
-            resetFormAndButton();
+            // resetFormAndButton();
         }
         
     });
 }
 
 function resetFormAndButton() {
-    $('#code_jgr').css('background-color', '');
-    $('#deb_cre').css('background-color', '');
-    $('#year').css('background-color', '');
-    $('#code_jrc').val('').css('background-color', '').focus();
-    $('#journal_jrc_no').val('').css('background-color', '');
-    $('#account_no').val('').css('background-color', '');
-    $('#account_name').val('').css('background-color', '');    
+    $('#code_jgr').prop('selectedIndex', 0).trigger('change');
+    $('#journal_jrc_no').val('12');
+    $('#code_jrc').prop('selectedIndex', 0).trigger('change');
+    $('#description').val('');
+    $('#journal_date').val('');
+    $('#due_date').val('');
+    $('#cp').text("");
 
+    $('.form-detail').hide();
     $('#formTitle').text('Add Form');
-    $('#addBtn').text('Save'); // Change button text back to "Save"
+    $('#addBtn').text('Save Header'); // Change button text back to "Save"
     $('#formMethod').val('POST'); // Reset form method to POST
 
     // Reset button click event to add new user
