@@ -91,10 +91,11 @@
           </div>
                       
             <form id="formAuthentication_detail" class="card-body form-horizontal" style="overflow-x: auto; white-space: nowrap;">
+                <input type="hidden" name="_method_det" id="formMethod_det" value="POST">
                 <div class="row g-3 d-flex flex-nowrap">
                     <div class="col-md-2">
                         <label class="col-form-label text-end" for="basic-default-name">No. Perkiraan</label>             
-                        <input type="text" data-bs-toggle="modal" data-bs-target="#modAccList" class="form-control" id="account_no" name="account_no" placeholder="Klik here.." readonly>
+                        <input type="text" data-bs-toggle="modal" data-bs-target="#modAccList" class="form-control" id="account_no" name="account_no" placeholder="Klik here.." readonly required>
                     </div>
                     <div class="col-md-1">
                         <label class="col-form-label text-end" for="basic-default-name">Biaya</label>             
@@ -106,15 +107,15 @@
                     </div>
                     <div class="col-md-1">
                         <label class="col-form-label text-end" for="basic-default-name">Divisi</label>             
-                        <input type="text" data-bs-toggle="modal" data-bs-target="#modDivList" class="form-control" id="code" name="code" placeholder="Klik here.." readonly>
+                        <input type="text" data-bs-toggle="modal" data-bs-target="#modDivList" class="form-control" id="code" name="code" placeholder="Klik here.." readonly required>
                     </div>
                     <div class="col-md-1">
                         <label class="col-form-label text-end" for="basic-default-name">Currency</label>             
                         <input type="text" data-bs-toggle="modal" data-bs-target="#modCurrList" class="form-control" id="code_currency" name="code_currency" placeholder="Klik here.." readonly>
                     </div>
                     <div class="col-md-2">
-                        <label class="col-form-label text-end" for="basic-default-name">Debet</label>             
-                        <input type="text" class="form-control" id="debet" name="debet">
+                        <label class="col-form-label text-end" for="basic-default-name">Debit</label>             
+                        <input type="text" class="form-control" id="debit" name="debit">
                     </div>
                     <div class="col-md-2">
                         <label class="col-form-label text-end" for="basic-default-name">Kredit</label>             
@@ -128,6 +129,10 @@
                         <label class="col-form-label text-end" for="basic-default-name">Jumlah Total</label>             
                         <input type="text" class="form-control" id="jumlah_total" name="jumlah_total">
                     </div>
+                    <div class="col-md-4">
+                        <label class="col-form-label text-end" for="basic-default-name">Uraian</label>             
+                        <input type="text" class="form-control" id="description_detail" name="description_detail">
+                    </div>
                 </div>
                 <div class="pt-1">
                   <button type="button" id="addBtnDetail" class="btn btn-success">Save Detail</button>
@@ -138,17 +143,23 @@
       </div>
 
 
-      <div class="col-xxl" style="min-width: 100%;">
+      <div class="col-xxl table-detail" style="min-width: 100%; display: none;">
         <div class="card mb-4">
           <div class="card-datatable text-nowrap">
-            <table id="journalSourceCodeSina_dt" class="datatables-ajax table">
+            <table id="journalDetailSina_dt" class="datatables-ajax table">
               <thead>
               <tr>
                 <th width="15px">No.</th>
-                <th>Journal Code</th>
-                <th>Journal No.</th>
-                <th>Account No.</th>
-                <th>Account Name</th>
+                <th>No.Perkiraan</th>
+                <th>Biaya</th>
+                <th>Nama Perkiraan</th>
+                <th>Divisi</th>
+                <th>Currency</th>
+                <th>Debit</th>
+                <th>Kredit</th>
+                <th>Kurs</th>
+                <th>Jumlah Total</th>
+                <th>Uraian</th>
                 <th>Action</th>
               </tr>
               </thead>              
@@ -290,29 +301,40 @@
 <script type="text/javascript">    
 var table; // Declare table variable in global scope
 $(document).ready(function() {
-        table = $('#journalSourceCodeSina_dt').DataTable({
+    table = $('#journalDetailSina_dt').DataTable({
         processing: true,
         serverSide: true,
-        // ajax: '{!! route('journalSourceCodeSina.data') !!}', // Memanggil route yang menampilkan data JSON
+        // ajax: '{!! route('journalDetailSina.data') !!}',
         ajax: {
-            url: '{!! route('journalSourceCodeSina.data') !!}', // Memanggil route yang menampilkan data JSON
+            url: '{!! route('journalDetailSina.data') !!}',
+            type: 'GET',
             data: function (d) {
-                d.code_jgr = $('#code_jgr').val(); // Kirimkan code_jgr sebagai parameter tambahan
+                // Add dynamic parameters to the AJAX request
+                d.cpx = $('#cpx').val(); // Get value from input
+                d.journal_jrc_no = $('#journal_jrc_no').val(); // Get value from input
+                d.code_jgr = $('#code_jgr').val();          // Get value from input
+                d.code_jrc = $('#code_jrc').val();          // Get value from input
             }
         },
 
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-            { data: 'code_jrc', name: 'code_jrc' },
-            { data: 'journal_jrc_no', name: 'journal_jrc_no' },
             { data: 'account_no', name: 'account_no' },
-            { data: 'account_name', name: 'account_name' },            
+            { data: 'code_cost', name: 'code_cost' },
+            { data: 'account_no', name: 'account_no' },
+            { data: 'code_div', name: 'code_div' },
+            { data: 'code_currency', name: 'code_currency' },
+            { data: 'debit', name: 'debit' },
+            { data: 'kredit', name: 'kredit' },
+            { data: 'kurs', name: 'kurs' },
+            { data: 'jumlah_total', name: 'jumlah_total' },
+            { data: 'description_detail', name: 'description_detail' },
             {
                 data: 'action',
                 render: function (data, type, row, meta) {
                     return (
-                        `<a href="javascript:;" onclick="editJournalSourceCode(${row.id_jsc})" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-warning" title="Edit" class="btn btn-sm btn-icon item-edit"><i class="text-warning ti ti-pencil"></i></a>` +
-                        `<a href="javascript:;" onclick="confirmDelete(${row.id_jsc})" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-success" title="Delete" class="btn btn-sm btn-icon"><i class="text-success ti ti-trash"></i></a>`
+                        `<a href="javascript:;" onclick="editJournalDetail(${row.id_journal_detail})" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-warning" title="Edit" class="btn btn-sm btn-icon item-edit"><i class="text-warning ti ti-pencil"></i></a>` +
+                        `<a href="javascript:;" onclick="confirmDelete(${row.id_journal_detail})" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-success" title="Delete" class="btn btn-sm btn-icon"><i class="text-success ti ti-trash"></i></a>`
                     );
                 },
                 orderable: false, searchable: false
@@ -355,12 +377,13 @@ $(document).ready(function() {
          
         showJSC(c_jgr);
         $('.form-detail').hide();
+        $('.table-detail').hide();
         $('#journal_jrc_no').val("");
         $('#dt_periode').val("");
         $('#journal_date').val("");        
         $('#due_date').val("");
         $('#description').val("");
-        // table.ajax.reload(); // Reload data table saat dropdown berubah       
+        // table.ajax.reload();     
         // alert(c_jgr);
     });
 
@@ -371,10 +394,11 @@ $(document).ready(function() {
          
         showJsrNo(c_jgr,c_jrc);
         $('.form-detail').show();
+        $('.table-detail').show();
         $('#journal_date').val("");
         $('#due_date').val("");
         $('#description').val("");
-        // table.ajax.reload(); // Reload data table saat dropdown berubah       
+        // table.ajax.reload();      
         // alert(c_jgr);
     });
 
@@ -383,11 +407,22 @@ $(document).ready(function() {
         j_jrc_no = $('#journal_jrc_no').val();
         c_jgr = $('#code_jgr').val();
         c_jrc = $('#code_jrc').val();
-
          
         setFormByHeader(j_jrc_no,c_jgr,c_jrc);
-        table.ajax.reload(); // Reload data table saat dropdown berubah       
+        table.ajax.reload();   
         
+    });
+
+    $('#kurs').on('input', function(event) {
+        event.preventDefault();
+        debit = $('#debit').val();
+        kredit = $('#kredit').val();
+        kurs = $('#kurs').val();
+        description = $('#description').val();
+
+        jum_ttl = (debit+kredit)*kurs;
+        $('#jumlah_total').val(jum_ttl);
+        $('#description_detail').val(description);        
     });    
 
     $('#modAccList').on('shown.bs.modal', function () {
@@ -769,6 +804,149 @@ function addJournalSina() {
     });
 } 
 
+function addDetailJournalSina() {
+    var code_jgr = $('#code_jgr').val();
+    var code_jrc = $('#code_jrc').val();
+    var journal_jrc_no = $('#journal_jrc_no').val();
+    var cpx = $('#cpx').val();
+    var description = $('#description').val();
+    var journal_date = $('#journal_date').val();
+    var due_date = $('#due_date').val();
+    var account_no = $('#account_no').val();
+    var code_cost = $('#code_cost').val();
+    var code_div = $('#code_div').val();
+    var code_currency = $('#code_currency').val();
+    var debit = $('#debit').val();
+    var kredit = $('#kredit').val();
+    var kurs = $('#kurs').val();
+    var jumlah_total = $('#jumlah_total').val();
+    var description_detail = $('#description_detail').val();
+
+
+    if (code_jgr === '' || code_jrc === '' || journal_jrc_no === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Journal Group dan Year tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        });
+        return;
+    }
+    if (journal_date === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Tanggal tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        }).then(() => {
+            // Fokus ke input setelah SweetAlert ditutup
+            $('#journal_date').focus();
+        });
+        return;
+    }
+    if (due_date === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Tanggal jatuh tempo tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        }).then(() => {
+            // Fokus ke input setelah SweetAlert ditutup
+            $('#due_date').focus();
+        });
+        return;
+    }
+    if (account_no === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No Perkiraan tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        }).then(() => {
+            // Fokus ke input setelah SweetAlert ditutup
+            $('#account_no').focus();
+        });
+        return;
+    }
+
+    $.ajax({
+        url: '{{ route('journalDetailSina.add') }}', // Route for saving data
+        type: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            code_jgr: code_jgr,
+            code_jrc: code_jrc,
+            journal_jrc_no: journal_jrc_no,
+            cpx: cpx,
+            description: description,
+            journal_date: journal_date,
+            due_date: due_date,
+            account_no: account_no,
+            code_cost: code_cost,
+            code_div: code_div,
+            code_currency: code_currency,
+            debit: debit,
+            kredit: kredit,
+            kurs: kurs,
+            jumlah_total: jumlah_total,
+            description_detail: description_detail
+        },
+        success: function(response) {            
+
+            // $('#journal_jrc_no').val(response.journal_jrc_no);
+            // Reload table without resetting pagination
+            table.ajax.reload(null, false);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Data berhasil disimpan!',
+                showCancelButton: false,
+                confirmButtonText: 'OK',
+                customClass: {
+                  confirmButton: 'btn btn-primary'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // resetFormAndButton();
+                }
+            }); 
+        },
+        error: function(xhr) {
+            var errors = xhr.responseJSON.errors; // Ambil pesan error dari response JSON
+            var errorMessages = '';
+
+            // Loop melalui setiap error dan gabungkan menjadi satu pesan
+            $.each(errors, function(key, value) {
+                errorMessages += value[0] + '<br>';
+            });
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                html: errorMessages, // Menampilkan pesan error dalam HTML
+                customClass: {
+                  confirmButton: 'btn btn-danger'
+                },
+                buttonsStyling: false
+            });
+        }
+    });
+} 
+
 // function editJournalSourceCode(id_jsc) {
 //     $.ajax({
 //         url: `journalSourceCodeSina/${id_jsc}`, // Fetch user data by ID
@@ -845,15 +1023,16 @@ function updateJournalSina(j_jrc_no,c_jgr,c_jrc) {
 }
 
 function resetFormAndButton() {
-    $('#code_jgr').prop('selectedIndex', 0).trigger('change');
-    $('#journal_jrc_no').val('12');
-    $('#code_jrc').prop('selectedIndex', 0).trigger('change');
+    $('#code_jgr').val('').trigger('change');    
+    $('#code_jrc').val('').trigger('change');
+    $('#journal_jrc_no').val('');
     $('#description').val('');
     $('#journal_date').val('');
     $('#due_date').val('');
     $('#cp').text("");
 
     $('.form-detail').hide();
+    $('.table-detail').hide();
     $('#formTitle').text('Add Form');
     $('#addBtn').text('Save Header'); // Change button text back to "Save"
     $('#formMethod').val('POST'); // Reset form method to POST

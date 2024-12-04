@@ -21,6 +21,7 @@ class JournalDetailSinaModel extends Model
     protected $table = 'tb_journal_detail';
     protected $primaryKey = 'id_journal_detail';
     protected $fillable = [
+        'journal_head_id',
         'code_jgr',
         'code_jrc',
         'code_period',
@@ -30,9 +31,12 @@ class JournalDetailSinaModel extends Model
         'code_cost',
         'code_div',
         'invoice_no',
+        'code_currency',
         'debit',
         'kredit',
-        'description',
+        'kurs',
+        'jumlah_total',
+        'description_detail',
         'created_by'
     ];
     

@@ -55,6 +55,36 @@ class JournalSinaController extends Controller
                         ->make(true);
     }
 
+    public function journalDetailSina_data(Request $request)
+    {
+        $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
+                                ->where('user_acc_period', Auth::user()->username)
+                                ->first(); // Fetch a single record
+        $syear = $getYearActive->year;
+
+        $no_jjrc = $request->cpx.$request->journal_jrc_no;
+        $JournalHeaderId = JournalHeaderSinaModel::select('id_journal_head')
+                                ->where('journal_jrc_no', $no_jjrc)
+                                ->where('code_jgr', $request->code_jgr)
+                                ->where('code_jrc', $request->code_jrc)
+                                ->first();
+                                
+        $jhi = $JournalHeaderId ? $JournalHeaderId->id_journal_head : 0;
+        // if ($JournalHeaderId === null) {
+        //     $jhi = 0;
+        // } else {
+        //     $jhi = $JournalHeaderId->id_journal_head;
+        // }
+
+        $data = DB::table(DB::raw("(SELECT * FROM tb_journal_detail) as tjd"))
+                ->where('journal_head_id', $jhi)
+                ->orderBy('id_journal_detail', 'ASC');
+        
+        return Datatables::of($data)
+                        ->addIndexColumn()
+                        ->make(true);
+    }
+
     public function journalSina_cjgr($c_jgr)
     {
         // Find the user by ID
@@ -92,20 +122,25 @@ class JournalSinaController extends Controller
                                 ->where('code_period', $cp)
                                 ->orderBy('id_journal_head', 'desc')
                                 ->first(); // Fetch a single record
-        if(!empty($getDataJsrNo)){
-            $lastNumber  = substr($getDataJsrNo, -4);
-            $nourut = (int)$lastNumber + 1;            
-            $newNo = sprintf("%04d", $nourut);
-            $jsrNo = $newNo;            
+                                
+        if($c_jrc!="null" AND $c_jrc!="XX"){
+            if(!empty($getDataJsrNo)){
+                $lastNumber  = substr($getDataJsrNo, -4);
+                $nourut = (int)$lastNumber + 1;            
+                $newNo = sprintf("%04d", $nourut);
+                $jsrNo = $newNo;            
+            }else{
+                $jsrNo = '0001';
+            }      
         }else{
-            $jsrNo = '0001';
-        }      
-        
+            $jsrNo = '';
+            $cp = '';
+        }
         return response()->json(['cp' => $cp, 'jsrNo' => $jsrNo, 'dt_periode' => $dt_periode]);
     }
 
     public function journalSina_setFormByHeader($j_jrc_no,$c_jgr,$c_jrc)
-    {        
+    {
         $getYearActive = TempAccountingPeriodSinaModel::select('year','month','code_period')
                                 ->where('user_acc_period', Auth::user()->username)
                                 ->first(); // Fetch a single record        
@@ -208,6 +243,43 @@ class JournalSinaController extends Controller
         $accountListSina->delete();
         
         return response()->json(['message' => 'Data berhasil dihapus!']);
+    }
+
+    public function journalDetailSina_add(Request $request)
+    {
+        $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
+                                ->where('user_acc_period', Auth::user()->username)
+                                ->first();
+
+        $cp = $getYearActive->code_period;
+        $no_jjrc = $request->cpx.$request->journal_jrc_no;
+
+        $JournalHeaderId = JournalHeaderSinaModel::select('id_journal_head')
+                                ->where('journal_jrc_no', $no_jjrc)
+                                ->where('code_jgr', $request->code_jgr)
+                                ->where('code_jrc', $request->code_jrc)
+                                ->first();
+        $jhi = $JournalHeaderId->id_journal_head;
+        
+        $journalDetailSina = new JournalDetailSinaModel([
+            'journal_head_id' => $jhi,                    
+            'code_period' => $request->cpx,
+            'account_no' => $request->account_no,
+            'code_cost' => $request->code_cost,
+            'code_div' => $request->code_div,
+            'invoice_no' => $request->invoice_no,
+            'code_currency' => $request->code_currency,
+            'debit' => $request->debit,
+            'kredit' => $request->kredit,
+            'kurs' => $request->kurs,
+            'jumlah_total' => $request->jumlah_total,
+            'description_detail' => $request->description_detail,
+            'created_by' => Auth::user()->name
+        ]);
+
+        $journalDetailSina->save();        
+        // return redirect()->route('journalSina')->with('success', 'Tambah data sukses!');
+        return response()->json(['success' => 'Tambah data sukses!']);
     }
 
 }

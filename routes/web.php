@@ -115,7 +115,6 @@ Route::delete('journalSourceCodeSina/delete/{id_jsc}', [JournalSourceCodeSinaCon
 //GENERAL LEDGER
 
 Route::get('journalSina',[JournalSinaController::class, 'journalSina_browse'])->name('journalSina')->middleware('auth');
-Route::get('journalSina/json', [JournalSinaController::class, 'journalSina_data'])->name('journalSina.data')->middleware('auth');
 Route::post('journalSina', [JournalSinaController::class, 'journalSina_add'])->name('journalSina.add')->middleware('auth');
 Route::get('journalSina/cjgr/{c_jgr}', [JournalSinaController::class, 'journalSina_cjgr'])->name('journalSina.cjgr');
 Route::get('journalSina/jsc/{c_jgr}', [JournalSinaController::class, 'journalSina_jsc'])->name('journalSina.jsc');
@@ -124,6 +123,9 @@ Route::get('journalSina/setFormByHeader/{j_jrc_no}/{c_jgr}/{c_jrc}', [JournalSin
 Route::get('journalSina/{id_jsc}', [JournalSinaController::class, 'journalSina_edit'])->name('journalSina.edit');
 Route::put('journalSina/update/{j_jrc_no}/{c_jgr}/{c_jrc}', [JournalSinaController::class, 'journalSina_update'])->name('journalSina.update');
 Route::delete('journalSina/delete/{id_jsc}', [JournalSinaController::class, 'journalSina_delete'])->name('journalSina.delete');
+
+Route::post('journalDetailSina', [JournalSinaController::class, 'journalDetailSina_add'])->name('journalDetailSina.add')->middleware('auth');
+Route::get('journalDetailSina/json', [JournalSinaController::class, 'journalDetailSina_data'])->name('journalDetailSina.data')->middleware('auth');
 
 Route::get('accountingPeriodSina',[AccountingPeriodSinaController::class, 'accountingPeriodSina_browse'])->name('accountingPeriodSina')->middleware('auth');
 Route::get('accountingPeriodSina/json', [AccountingPeriodSinaController::class, 'accountingPeriodSina_data'])->name('accountingPeriodSina.data')->middleware('auth');
