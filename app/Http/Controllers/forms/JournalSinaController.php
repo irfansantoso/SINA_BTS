@@ -70,15 +70,16 @@ class JournalSinaController extends Controller
                                 ->first();
                                 
         $jhi = $JournalHeaderId ? $JournalHeaderId->id_journal_head : 0;
-        // if ($JournalHeaderId === null) {
-        //     $jhi = 0;
-        // } else {
-        //     $jhi = $JournalHeaderId->id_journal_head;
-        // }
-
         $data = DB::table(DB::raw("(SELECT * FROM tb_journal_detail) as tjd"))
-                ->where('journal_head_id', $jhi)
-                ->orderBy('id_journal_detail', 'ASC');
+                ->join('tb_account_list', 'tjd.account_no', '=', 'tb_account_list.account_no')
+                ->where('tjd.journal_head_id', $jhi)
+                ->orderBy('tjd.id_journal_detail', 'ASC')
+                ->select('tjd.*', 'tb_account_list.account_name')
+                ->get();
+
+        // $data = DB::table(DB::raw("(SELECT * FROM tb_journal_detail) as tjd"))
+        //         ->where('journal_head_id', $jhi)
+        //         ->orderBy('id_journal_detail', 'ASC');
         
         return Datatables::of($data)
                         ->addIndexColumn()
@@ -203,16 +204,7 @@ class JournalSinaController extends Controller
         $journalHeaderSina->save();        
         // return redirect()->route('journalSina')->with('success', 'Tambah data sukses!');
         return response()->json(['success' => 'Tambah data sukses!']);
-    } 
-
-    public function journalSina_edit($id_jsc)
-    {
-        // Find the user by ID
-        $journalSourceCodeSina = JournalSourceCodeSinaModel::findOrFail($id_jsc);
-
-        // Return the user details as JSON
-        return response()->json($journalSourceCodeSina);
-    }
+    }     
 
     public function journalSina_update(Request $request, $j_jrc_no,$c_jgr,$c_jrc)
     {
@@ -280,6 +272,54 @@ class JournalSinaController extends Controller
         $journalDetailSina->save();        
         // return redirect()->route('journalSina')->with('success', 'Tambah data sukses!');
         return response()->json(['success' => 'Tambah data sukses!']);
+    }
+
+    public function journalDetailSina_edit($id_jd)
+    {
+        // Find the user by ID
+        // $journalDetailSina = JournalDetailSinaModel::findOrFail($id_jd);
+        $journalDetailSina = JournalDetailSinaModel::join('tb_account_list', 'tb_journal_detail.account_no', '=', 'tb_account_list.account_no')
+            ->where('tb_journal_detail.id_journal_detail', $id_jd)
+            ->select('tb_journal_detail.*', 'tb_account_list.account_name as account_name')
+            ->first();
+
+        // Return the user details as JSON
+        return response()->json($journalDetailSina);
+    }
+
+    public function journalDetailSina_update(Request $request, $id_jd)
+    {
+
+        $journalDetailSinaUpdate = JournalDetailSinaModel::where('id_journal_detail', $id_jd)
+                                                        ->firstOrFail();
+
+        $journalDetailSinaUpdate->account_no = $request->input('account_no');
+        $journalDetailSinaUpdate->code_cost = $request->input('code_cost');
+        $journalDetailSinaUpdate->code_div = $request->input('code_div');
+        $journalDetailSinaUpdate->invoice_no = $request->input('invoice_no');
+        $journalDetailSinaUpdate->code_currency = $request->input('code_currency');
+        $journalDetailSinaUpdate->debit = $request->input('debit');
+        $journalDetailSinaUpdate->kredit = $request->input('kredit');
+        $journalDetailSinaUpdate->kurs = $request->input('kurs');
+        $journalDetailSinaUpdate->jumlah_total = $request->input('jumlah_total');
+        $journalDetailSinaUpdate->description_detail = $request->input('description_detail');
+
+        // Save the updated journalDetailSinaUpdateModel
+        $journalDetailSinaUpdate->save();
+
+        // Return a success response
+        return response()->json([
+            'message' => 'Ubah Data successfully',
+            'data' => $journalDetailSinaUpdate,
+        ]);
+    }
+
+    public function journalDetailSina_delete($id_jd)
+    {
+        $journalDetailSina = JournalDetailSinaModel::findOrFail($id_jd);
+        $journalDetailSina->delete();
+        
+        return response()->json(['message' => 'Data berhasil dihapus!']);
     }
 
 }

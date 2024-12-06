@@ -87,7 +87,7 @@
       <div class="col-xxl form-detail" style="min-width: 100%; display: none;">
         <div class="card mb-4">
           <div class="card-header d-flex align-items-center justify-content-between">
-            <h5 class="mb-0" id="formTitle">Form Detail</h5>            
+            <h5 class="mb-0" id="formTitleDetail">Form Detail</h5>            
           </div>
                       
             <form id="formAuthentication_detail" class="card-body form-horizontal" style="overflow-x: auto; white-space: nowrap;">
@@ -107,7 +107,7 @@
                     </div>
                     <div class="col-md-1">
                         <label class="col-form-label text-end" for="basic-default-name">Divisi</label>             
-                        <input type="text" data-bs-toggle="modal" data-bs-target="#modDivList" class="form-control" id="code" name="code" placeholder="Klik here.." readonly required>
+                        <input type="text" data-bs-toggle="modal" data-bs-target="#modDivList" class="form-control" id="code_div" name="code_div" placeholder="Klik here.." readonly required>
                     </div>
                     <div class="col-md-1">
                         <label class="col-form-label text-end" for="basic-default-name">Currency</label>             
@@ -321,7 +321,7 @@ $(document).ready(function() {
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'account_no', name: 'account_no' },
             { data: 'code_cost', name: 'code_cost' },
-            { data: 'account_no', name: 'account_no' },
+            { data: 'account_name', name: 'account_name' },
             { data: 'code_div', name: 'code_div' },
             { data: 'code_currency', name: 'code_currency' },
             { data: 'debit', name: 'debit' },
@@ -334,7 +334,7 @@ $(document).ready(function() {
                 render: function (data, type, row, meta) {
                     return (
                         `<a href="javascript:;" onclick="editJournalDetail(${row.id_journal_detail})" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-warning" title="Edit" class="btn btn-sm btn-icon item-edit"><i class="text-warning ti ti-pencil"></i></a>` +
-                        `<a href="javascript:;" onclick="confirmDelete(${row.id_journal_detail})" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-success" title="Delete" class="btn btn-sm btn-icon"><i class="text-success ti ti-trash"></i></a>`
+                        `<a href="javascript:;" onclick="confirmDetailDelete(${row.id_journal_detail})" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-success" title="Delete" class="btn btn-sm btn-icon"><i class="text-success ti ti-trash"></i></a>`
                     );
                 },
                 orderable: false, searchable: false
@@ -368,7 +368,8 @@ $(document).ready(function() {
     });
 
     $('#clearDetail').on('click', function(event) {
-        resetDetailFormAndButton();
+        resetFormAndButtonDetail();        
+
     });
 
     $('#code_jgr').on('change', function(event) {
@@ -409,7 +410,7 @@ $(document).ready(function() {
         c_jrc = $('#code_jrc').val();
          
         setFormByHeader(j_jrc_no,c_jgr,c_jrc);
-        table.ajax.reload();   
+        table.ajax.reload();
         
     });
 
@@ -594,7 +595,7 @@ function getCostDetail(code_cost, cost_description) {
 
 function getDivDetail(code, division_name) {
     // Isi field 'account_no' dan 'account_name' di form
-    $('#code').val(code);
+    $('#code_div').val(code);
     $('#division_name').val(division_name);
 
     // Tutup modal menggunakan Bootstrap modal API
@@ -921,7 +922,7 @@ function addDetailJournalSina() {
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // resetFormAndButton();
+                    resetFormAndButtonDetail();
                 }
             }); 
         },
@@ -947,42 +948,95 @@ function addDetailJournalSina() {
     });
 } 
 
-// function editJournalSourceCode(id_jsc) {
-//     $.ajax({
-//         url: `journalSourceCodeSina/${id_jsc}`, // Fetch user data by ID
-//         type: 'GET',
-//         success: function(journalSourceCodeSina) {
-//             // Populate form fields with the user's data
-//             $('#code_jgr').val(journalSourceCodeSina.code_jgr).trigger('change');
-//             $('#deb_cre').val(journalSourceCodeSina.deb_cre);
-//             $('#year').val(journalSourceCodeSina.year);
-//             $('#code_jrc').val(journalSourceCodeSina.code_jrc).focus();
-//             $('#journal_jrc_no').val(journalSourceCodeSina.journal_jrc_no);
-//             $('#account_no').val(journalSourceCodeSina.account_no);
-//             $('#account_name').val(journalSourceCodeSina.account_name);
+function editJournalDetail(id_jd) {
+    $.ajax({
+        url: `journalDetailSina/${id_jd}`, // Fetch user data by ID
+        type: 'GET',
+        success: function(journalDetailSina) {
+            // Populate form fields with the user's data
+            $('#account_no').val(journalDetailSina.account_no);
+            $('#code_cost').val(journalDetailSina.code_cost);
+            $('#account_name').val(journalDetailSina.account_name);
+            $('#code_div').val(journalDetailSina.code_div);
+            $('#code_currency').val(journalDetailSina.code_currency);
+            $('#debit').val(journalDetailSina.debit);
+            $('#kredit').val(journalDetailSina.kredit);
+            $('#kurs').val(journalDetailSina.kurs);
+            $('#jumlah_total').val(journalDetailSina.jumlah_total);
+            $('#description_detail').val(journalDetailSina.description_detail);
 
-//             // Change background color to yellow
-//             $('#deb_cre, #year, #code_jrc, #journal_jrc_no, #account_no, #account_name').css('background-color', '#FFFF99');
-//             $('#code_jgr').css('background', '#FFFF99');
+            // Change background color to yellow
+            $('#account_no, #code_cost, #account_name, #code_div, #code_currency, #debit, #kredit, #kurs, #jumlah_total, #description_detail').css('background-color', '#FFFF99');
 
-//             // Change the form action to update the user and the button text
-//             $('#formAuthentication').attr('action', `journalSourceCodeSina/update/${id_jsc}`);
-//             $('#formTitle').text('Edit Form');
-//             $('#addBtn').text('Edit');
+            $('.form-detail').css('display', 'block');
+            $('#formAuthentication_detail').attr('action', `journalDetailSina/update/${id_jd}`);
+            $('#formTitleDetail').text('Edit Form');
+            $('#addBtnDetail').text('Edit Detail');
 
-//             $('#formMethod').val('PUT');
+            $('#formMethod_det').val('PUT');
 
-//             // Change the button's click event to trigger an update instead of a create
-//             $('#addBtn').off('click').on('click', function(event) {
-//                 event.preventDefault();
-//                 updateJournalSourceCode(id_jsc);
-//             });
-//         },
-//         error: function(xhr) {
-//             alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
-//         }
-//     });
-// }
+            // Change the button's click event to trigger an update instead of a create
+            $('#addBtnDetail').off('click').on('click', function(event) {
+                event.preventDefault();
+                updateJournalDetailSina(id_jd);
+            });
+        },
+        error: function(xhr) {
+            alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
+        }
+    });
+}
+
+function updateJournalDetailSina(id_jd) {
+    var account_no = $('#account_no').val();
+    var code_cost = $('#code_cost').val();
+    var code_div = $('#code_div').val();
+    var code_currency = $('#code_currency').val();
+    var debit = $('#debit').val();
+    var kredit = $('#kredit').val();
+    var kurs = $('#kurs').val();
+    var jumlah_total = $('#jumlah_total').val();
+    var description_detail = $('#description_detail').val();
+
+    $.ajax({
+        url: `journalDetailSina/update/${id_jd}`, // Update route
+        type: 'POST',  // Use POST method
+        data: {
+            _method: 'PUT',  // Spoof method to PUT
+            _token: '{{ csrf_token() }}',
+            account_no: account_no,
+            code_cost: code_cost,
+            code_div: code_div,
+            code_currency: code_currency,
+            debit: debit,
+            kredit: kredit,
+            kurs: kurs,
+            jumlah_total: jumlah_total,
+            code_div: code_div,
+            description_detail: description_detail
+            
+        },
+        success: function(journalSinaUpdate) {
+
+            table.ajax.reload(null, false);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Data berhasil diubah!',
+                customClass: {
+                  confirmButton: 'btn btn-primary'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    resetFormAndButtonDetail();
+                }
+            }); 
+        }
+        
+    });
+}
 
 function updateJournalSina(j_jrc_no,c_jgr,c_jrc) {
     var description = $('#description').val();
@@ -1044,8 +1098,33 @@ function resetFormAndButton() {
     });
 }
 
+function resetFormAndButtonDetail() {
+    $('#account_no').val('').css('background-color', '');    
+    $('#code_cost').val('').css('background-color', '');
+    $('#account_name').val('').css('background-color', '');
+    $('#code_div').val('').css('background-color', '');
+    $('#code_currency').val('').css('background-color', '');
+    $('#journal_date').val('').css('background-color', '');
+    $('#debit').val('').css('background-color', '');
+    $('#kredit').val('').css('background-color', '');
+    $('#kurs').val('').css('background-color', '');
+    $('#jumlah_total').val('').css('background-color', '');
+    $('#description_detail').val('').css('background-color', '');
+
+    $('.form-detail').css('display', 'block');
+    $('#formTitleDetail').text('Detail Form');
+    $('#addBtnDetail').text('Save Detail');
+
+    $('#formMethod_det').val('POST');
+    // Reset button click event to add new user
+    // $('#addBtnDetail').off('click').on('click', function(event) {
+    //     event.preventDefault();
+    //     addJournalSina();
+    // });
+}
+
 // Confirm delete function
-function confirmDelete(id_jsc) {
+function confirmDetailDelete(id_jd) {
     Swal.fire({
         title: 'Apakah Anda yakin?',
         text: 'Data ini akan dihapus!',
@@ -1060,14 +1139,14 @@ function confirmDelete(id_jsc) {
         buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
-            deleteAccountType(id_jsc);
+            deleteJournalDetail(id_jd);
         }
     });
 }
 
-function deleteAccountType(id_jsc) {
+function deleteJournalDetail(id_jd) {
     $.ajax({
-        url: `journalSourceCodeSina/delete/${id_jsc}`,
+        url: `journalDetailSina/delete/${id_jd}`,
         type: 'DELETE',
         data: {
             _token: '{{ csrf_token() }}',
