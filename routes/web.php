@@ -14,6 +14,7 @@ use App\Http\Controllers\Tables\CostListSinaController;
 use App\Http\Controllers\Tables\JournalGroupSinaController;
 use App\Http\Controllers\Tables\JournalSourceCodeSinaController;
 use App\Http\Controllers\Forms\JournalSinaController;
+use App\Http\Controllers\Reporting\RptGenLedSinaController;
 use App\Http\Controllers\Master\EmailReceiverHrisController;
 use App\Http\Controllers\Forms\EmployeeHrisController;
 use App\Http\Controllers\Email\ContractController;
@@ -126,6 +127,7 @@ Route::put('journalSina/update/{j_jrc_no}/{c_jgr}/{c_jrc}', [JournalSinaControll
 
 Route::post('journalDetailSina', [JournalSinaController::class, 'journalDetailSina_add'])->name('journalDetailSina.add')->middleware('auth');
 Route::get('journalDetailSina/json', [JournalSinaController::class, 'journalDetailSina_data'])->name('journalDetailSina.data')->middleware('auth');
+Route::get('journalDetailSina/setDebKre/{j_jrc_no}/{c_jgr}/{c_jrc}', [JournalSinaController::class, 'journalDetailSina_setDebKre'])->name('journalDetailSina.setDebKre');
 Route::get('journalDetailSina/{id_jd}', [JournalSinaController::class, 'journalDetailSina_edit'])->name('journalDetailSina.edit');
 Route::put('journalDetailSina/update/{id_jd}', [JournalSinaController::class, 'journalDetailSina_update'])->name('journalDetailSina.update');
 Route::delete('journalDetailSina/delete/{id_jd}', [JournalSinaController::class, 'journalDetailSina_delete'])->name('journalDetailSina.delete');
@@ -137,6 +139,12 @@ Route::get('accountingPeriodSina/{id_period}', [AccountingPeriodSinaController::
 Route::put('accountingPeriodSina/update/{id_period}', [AccountingPeriodSinaController::class, 'accountingPeriodSina_update'])->name('accountingPeriodSina.update');
 Route::put('accountingPeriodSina/updateStatus/{id_period}', [AccountingPeriodSinaController::class, 'accountingPeriodSina_updateStatus'])->name('accountingPeriodSina.updateStatus');
 Route::delete('accountingPeriodSina/delete/{id_period}', [AccountingPeriodSinaController::class, 'accountingPeriodSina_delete'])->name('accountingPeriodSina.delete');
+
+// Reporting
+
+Route::get('rptGenLedSina',[RptGenLedSinaController::class, 'rptGenLedSina_browse'])->name('rptGenLedSina')->middleware('auth');
+Route::get('rptGenLedSina/setPeriode/{month}/{year}', [RptGenLedSinaController::class, 'rptGenLedSina_setPeriode'])->name('rptGenLedSina.setPeriode');
+Route::get('rptGenLedSinaModal/{s_date}/{e_date}/{acc_no}/{acc_no_end}/{code_cost}/{code_div}', [RptGenLedSinaController::class, 'rptGenLedSina_modal'])->name('rptGenLedSinaModal')->middleware('auth');
 
 Route::get('emailReceiverHris',[EmailReceiverHrisController::class, 'emailReceiver_browse'])->name('emailReceiverHris')->middleware('auth');
 Route::post('emailReceiverHris', [EmailReceiverHrisController::class, 'emailReceiver_add'])->name('emailReceiverHris.add')->middleware('auth');

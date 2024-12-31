@@ -73,13 +73,13 @@
     <li class="{{ request()->is('accountingPeriodSina') ? 'menu-item active open' : 'menu-item' }}">
       <a href="javascript:void(0)" class="menu-link menu-toggle">
         <i class="menu-icon tf-icons ti ti-abacus"></i>
-        <div data-i18n="General Ledger">General Ledger</div>
+        <div data-i18n="Accounting Periode">Accounting Periode</div>
       </a>
       <ul class="menu-sub">
         <li class="{{ request()->is('accountingPeriodSina') ? 'menu-item active' : 'menu-item' }}">
           <a href="{{ route('accountingPeriodSina') }}" class="menu-link">
             <i class="menu-icon tf-icons ti ti-users"></i>
-            <div data-i18n="Accounting Period">Accounting Period</div>
+            <div data-i18n="Accounting Periode">Accounting Periode</div>
           </a>
         </li>
       </ul>
@@ -126,7 +126,7 @@
 
     <!-- Forms Inputs -->
     <li class="menu-header small text-uppercase">
-      <span class="menu-header-text">Forms &amp; Input</span>
+      <span class="menu-header-text">Forms &amp; Report</span>
     </li>
     <!-- Forms -->
     <li class="{{ request()->is('journalSina') ? 'menu-item active open' : 'menu-item' }}">
@@ -139,6 +139,21 @@
           <a href="{{ route('journalSina') }}" class="menu-link">
             <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
             <div data-i18n="Journal">Journal</div>
+          </a>
+        </li>        
+      </ul>
+    </li>
+    <!-- Forms -->
+    <li class="{{ request()->is('rptGenLedSina') ? 'menu-item active open' : 'menu-item' }}">
+      <a href="javascript:void(0)" class="menu-link menu-toggle">
+        <i class="menu-icon tf-icons ti ti-table"></i>
+        <div data-i18n="Report">Report</div>
+      </a>
+      <ul class="menu-sub">
+        <li class="{{ request()->is('rptGenLedSina') ? 'menu-item active' : 'menu-item' }}">
+          <a href="{{ route('rptGenLedSina') }}" class="menu-link">
+            <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
+            <div data-i18n="General Ledger">General Ledger</div>
           </a>
         </li>        
       </ul>

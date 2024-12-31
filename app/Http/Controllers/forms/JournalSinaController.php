@@ -237,6 +237,53 @@ class JournalSinaController extends Controller
         return response()->json(['message' => 'Data berhasil dihapus!']);
     }
 
+    public function journalDetailSina_setDebKre($j_jrc_no,$c_jgr,$c_jrc)
+    {
+        $getYearActive = TempAccountingPeriodSinaModel::select('year','month','code_period')
+                                ->where('user_acc_period', Auth::user()->username)
+                                ->first(); // Fetch a single record        
+
+        if (!$getYearActive) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data periode aktif tidak ditemukan.',
+            ], 404);
+        }
+        
+        $cp = $getYearActive->code_period;
+        $dt_periode = $getYearActive->month."/".$getYearActive->year;
+
+        $getDataSetDebKre = JournalHeaderSinaModel::select('id_journal_head')
+                                ->where('code_jgr', $c_jgr)
+                                ->where('code_jrc', $c_jrc)
+                                ->where('journal_jrc_no', $j_jrc_no)
+                                ->first(); // Fetch a single record  
+
+        if (!$getDataSetDebKre) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'ID Detail tidak ditemukan.',
+            ], 404);
+        }
+                                
+        $jhi = $getDataSetDebKre ? $getDataSetDebKre->id_journal_head : 0;
+        $dtDebKred = DB::table(DB::raw("(SELECT * FROM tb_journal_detail) as tjd"))
+                    ->where('tjd.journal_head_id', $jhi)
+                    ->selectRaw('
+                        SUM(tjd.debit) as total_debit, 
+                        SUM(tjd.kredit) as total_kredit, 
+                        (SUM(tjd.debit) - SUM(tjd.kredit)) as difference
+                        ')
+                    ->first();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $dtDebKred, // Pastikan ini sesuai dengan variabel query
+            'periode' => $dt_periode, // Informasi tambahan jika diperlukan
+        ]);
+            
+    }
+
     public function journalDetailSina_add(Request $request)
     {
         $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
@@ -256,6 +303,8 @@ class JournalSinaController extends Controller
         $journalDetailSina = new JournalDetailSinaModel([
             'journal_head_id' => $jhi,                    
             'code_period' => $request->cpx,
+            'journal_date' => $request->journal_date,
+            'due_date' => $request->due_date,
             'account_no' => $request->account_no,
             'code_cost' => $request->code_cost,
             'code_div' => $request->code_div,
@@ -292,7 +341,8 @@ class JournalSinaController extends Controller
 
         $journalDetailSinaUpdate = JournalDetailSinaModel::where('id_journal_detail', $id_jd)
                                                         ->firstOrFail();
-
+        $journalDetailSinaUpdate->journal_date = $request->input('journal_date');
+        $journalDetailSinaUpdate->due_date = $request->input('due_date');                       
         $journalDetailSinaUpdate->account_no = $request->input('account_no');
         $journalDetailSinaUpdate->code_cost = $request->input('code_cost');
         $journalDetailSinaUpdate->code_div = $request->input('code_div');

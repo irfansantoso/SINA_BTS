@@ -50,7 +50,7 @@
                     </select>
                 </div>
                 <div class="col-sm-2" style="display: flex; align-items: center;">
-                    <span id="cp" style="margin-right: 10px;background-color: orange;color: black;"></span>
+                    <span id="cp" style="margin-right: 10px;background-color: yellow;color: black;"></span>
                     <input type="text" style="display: flex; align-items: left;" class="form-control" id="journal_jrc_no" name="journal_jrc_no" placeholder="Journal Number">
                     <input type="hidden" class="form-control" id="cpx" name="cpx">
                 </div>
@@ -167,6 +167,36 @@
           </div>
         </div>
       </div>
+
+      <div class="col-xxl form-detail" style="min-width: 100%; display: none;">
+        <div class="card mb-4">
+                      
+            <form id="" class="card-body form-horizontal" style="overflow-x: auto;">
+                <div class="row">
+                    <label class="col-sm-1 col-form-label" for="basic-default-name">Total Debit</label>
+                    <div class="col-sm-1"><label class="col-sm-1 col-form-label" for="basic-default-name">:</label></div>
+                    <div class="col-sm-2" style="display: flex; justify-content: flex-end; align-items: center;">
+                        <span id="total_debit" style="margin-right: 10px;color: blue"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <label class="col-sm-1 col-form-label" for="basic-default-name">Total Kredit</label>
+                    <div class="col-sm-1"><label class="col-sm-1 col-form-label" for="basic-default-name">:</label></div>
+                    <div class="col-sm-2" style="display: flex; justify-content: flex-end; align-items: center;">
+                        <span id="total_kredit" style="margin-right: 10px;color: blue;"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <label class="col-sm-1 col-form-label" for="basic-default-name">Selisih</label>
+                    <div class="col-sm-1"><label class="col-sm-1 col-form-label" for="basic-default-name">:</label></div>
+                    <div class="col-sm-2" style="display: flex; justify-content: flex-end; align-items: center;">
+                        <span id="difference" style="margin-right: 10px;color: blue;"></span>
+                    </div>
+                </div>
+            </form>
+        </div>
+      </div>
+
     </div>
 
     <!-- Modal HTML -->
@@ -238,7 +268,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 50%;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="divListModalLabel">Cost List</h5>
+                    <h5 class="modal-title" id="divListModalLabel">Division List</h5>
                     <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
                     </button>
@@ -313,7 +343,7 @@ $(document).ready(function() {
                 d.cpx = $('#cpx').val(); // Get value from input
                 d.journal_jrc_no = $('#journal_jrc_no').val(); // Get value from input
                 d.code_jgr = $('#code_jgr').val();          // Get value from input
-                d.code_jrc = $('#code_jrc').val();          // Get value from input
+                d.code_jrc = $('#code_jrc').val();
             }
         },
 
@@ -324,10 +354,28 @@ $(document).ready(function() {
             { data: 'account_name', name: 'account_name' },
             { data: 'code_div', name: 'code_div' },
             { data: 'code_currency', name: 'code_currency' },
-            { data: 'debit', name: 'debit' },
-            { data: 'kredit', name: 'kredit' },
+            { 
+                data: 'debit', 
+                name: 'debit',
+                render: function(data, type, row) {
+                    return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data);
+                } 
+            },
+            { 
+                data: 'kredit', 
+                name: 'kredit',
+                render: function(data, type, row) {
+                    return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data);
+                } 
+            },
             { data: 'kurs', name: 'kurs' },
-            { data: 'jumlah_total', name: 'jumlah_total' },
+            { 
+                data: 'jumlah_total', 
+                name: 'jumlah_total',
+                render: function(data, type, row) {
+                    return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data);
+                } 
+            },
             { data: 'description_detail', name: 'description_detail' },
             {
                 data: 'action',
@@ -410,6 +458,7 @@ $(document).ready(function() {
         c_jrc = $('#code_jrc').val();
          
         setFormByHeader(j_jrc_no,c_jgr,c_jrc);
+        setDebKre(j_jrc_no,c_jgr,c_jrc);
         table.ajax.reload();
         
     });
@@ -718,6 +767,34 @@ function setFormByHeader(j_jrc_no, c_jgr, c_jrc) {
     });
 }
 
+function setDebKre(j_jrc_no, c_jgr, c_jrc) {
+    var cpx = $('#cpx').val();
+    var jjrc_no = cpx+j_jrc_no;
+
+    $.ajax({
+        url: `journalDetailSina/setDebKre/${jjrc_no}/${c_jgr}/${c_jrc}`, // Fetch data by code
+        type: 'GET',
+        success: function(response) {
+            if (response.status === 'success') {
+                const data = response.data;
+                
+                // $('#total_debit').text(data.total_debit);
+                // $('#total_kredit').text(data.total_kredit);
+                // $('#difference').text(data.difference);
+                Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data);
+                $('#total_debit').text(new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data.total_debit));
+                $('#total_kredit').text(new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data.total_kredit));
+                $('#difference').text(new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data.difference));               
+
+            } else {
+                // Tampilkan pesan error dari respons server
+                alert('Terjadi kesalahan saat mengambil data Journal Source Code.');
+            }
+        },
+
+    });
+}
+
 document.addEventListener('click', function (e) {
   if (e.target && e.target.classList.contains('choose-account')) {
     const accountNo = e.target.getAttribute('data-account-no');
@@ -909,6 +986,7 @@ function addDetailJournalSina() {
             // $('#journal_jrc_no').val(response.journal_jrc_no);
             // Reload table without resetting pagination
             table.ajax.reload(null, false);
+            setDebKre(journal_jrc_no,code_jgr,code_jrc);
 
             Swal.fire({
                 icon: 'success',
@@ -988,6 +1066,8 @@ function editJournalDetail(id_jd) {
 }
 
 function updateJournalDetailSina(id_jd) {
+    var journal_date = $('#journal_date').val();
+    var due_date = $('#due_date').val();
     var account_no = $('#account_no').val();
     var code_cost = $('#code_cost').val();
     var code_div = $('#code_div').val();
@@ -998,12 +1078,18 @@ function updateJournalDetailSina(id_jd) {
     var jumlah_total = $('#jumlah_total').val();
     var description_detail = $('#description_detail').val();
 
+    var j_jrc_no = $('#journal_jrc_no').val();
+    var c_jgr = $('#code_jgr').val();
+    var c_jrc = $('#code_jrc').val();
+
     $.ajax({
         url: `journalDetailSina/update/${id_jd}`, // Update route
         type: 'POST',  // Use POST method
         data: {
             _method: 'PUT',  // Spoof method to PUT
             _token: '{{ csrf_token() }}',
+            journal_date: journal_date,
+            due_date: due_date,
             account_no: account_no,
             code_cost: code_cost,
             code_div: code_div,
@@ -1019,6 +1105,7 @@ function updateJournalDetailSina(id_jd) {
         success: function(journalSinaUpdate) {
 
             table.ajax.reload(null, false);
+            setDebKre(j_jrc_no,c_jgr,c_jrc);
 
             Swal.fire({
                 icon: 'success',
@@ -1116,11 +1203,6 @@ function resetFormAndButtonDetail() {
     $('#addBtnDetail').text('Save Detail');
 
     $('#formMethod_det').val('POST');
-    // Reset button click event to add new user
-    // $('#addBtnDetail').off('click').on('click', function(event) {
-    //     event.preventDefault();
-    //     addJournalSina();
-    // });
 }
 
 // Confirm delete function
@@ -1145,6 +1227,10 @@ function confirmDetailDelete(id_jd) {
 }
 
 function deleteJournalDetail(id_jd) {
+    var j_jrc_no = $('#journal_jrc_no').val();
+    var c_jgr = $('#code_jgr').val();
+    var c_jrc = $('#code_jrc').val();
+
     $.ajax({
         url: `journalDetailSina/delete/${id_jd}`,
         type: 'DELETE',
@@ -1161,7 +1247,8 @@ function deleteJournalDetail(id_jd) {
                 },
                 buttonsStyling: false
             });
-            table.ajax.reload(null, false); // Reload the table
+            table.ajax.reload(null, false);
+            setDebKre(j_jrc_no,c_jgr,c_jrc);
         },
         error: function(xhr) {
             Swal.fire({
@@ -1177,13 +1264,5 @@ function deleteJournalDetail(id_jd) {
     });
 }    
 
-// Event listener untuk mendeteksi shortcut keyboard ( menggunakan shorcut keyboard ctrl+K)
-// document.addEventListener('keydown', function(event) {
-//     // Contoh: tekan Ctrl + K untuk klik tombol
-//     if (event.ctrlKey && event.key === 'k') {
-//         event.preventDefault(); // Mencegah aksi default Ctrl + K di browser
-//         resetFormAndButton();
-//     }
-// });
 </script>
  @stop

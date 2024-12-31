@@ -38,9 +38,14 @@ class DashboardHrisController extends Controller
 
     public function dashboard()
     {
-        $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
-                                ->where('user_acc_period', Auth::user()->username)
-                                ->first(); // Fetch a single record
+        if (Auth::check()) {
+            $username = Auth::user()->username;
+            $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
+                            ->where('user_acc_period', $username)
+                            ->first();
+        } else {
+            return redirect()->route('login')->with('error', 'Please log in to access this site.');
+        }
 
         // Check if a record was found
         $showYearActive = $getYearActive ? ' - ' . $getYearActive->year : '';
