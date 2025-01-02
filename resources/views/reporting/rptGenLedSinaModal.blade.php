@@ -13,7 +13,7 @@
             <td>&nbsp;</td>
         </tr>
         <tr>
-            <td colspan="10" align="center" valign="bottom" style="font-size: 8;text-align: center; font-weight: bold;">GENERAL LEDGER</td>
+            <td colspan="9" align="center" valign="bottom" style="font-size: 8;text-align: center; font-weight: bold;">GENERAL LEDGER</td>
         </tr>
         <tr>
             <td>&nbsp;</td>
@@ -28,7 +28,7 @@
             <td>&nbsp;</td>
         </tr>
         <tr>
-            <td colspan="10" align="center" valign="bottom" style="font-size: 8;text-align: center; font-weight: bold;">Periode Date : {{ $s_date }} - {{ $e_date }}</td>
+            <td colspan="9" align="center" valign="bottom" style="font-size: 8;text-align: center; font-weight: bold;">Periode Date : {{ $s_date }} - {{ $e_date }}</td>
         </tr>
         <tr>
             <td>&nbsp;</td>
@@ -45,12 +45,12 @@
 
         @foreach ($reportData as $account)
         <tr>
-            <td colspan="10" style="font-size: 8; text-align: left; border-top: 1px solid black;">
+            <td colspan="9" style="font-size: 8; text-align: left; border-top: 1px solid black;">
                 <strong>{{ $account['account_no'] }} {{ $account['account_name'] }}</strong>
             </td>
         </tr>
         <tr>
-            <td colspan="10">
+            <td colspan="9">
                 <strong>&nbsp;</strong>
             </td>
         </tr>
@@ -66,7 +66,7 @@
             <td style="font-size: 8; text-align: center; font-weight: bold;">D/C</td>
         </tr>
         <tr>
-            <td colspan="10">
+            <td colspan="9">
                 <strong>&nbsp;</strong>
             </td>
         </tr>
@@ -85,7 +85,7 @@
         </tr>
         @endforeach
         <tr>
-            <td colspan="10">
+            <td colspan="9">
                 <strong>&nbsp;</strong>
             </td>
         </tr>
@@ -110,7 +110,7 @@
             <td style="font-size: 8; text-align: right; border-top: 1px solid black;">
                 <strong>{{ number_format($totalBalance, 2, ',', '.') }}</strong>
             </td>
-            <td>&nbsp;</td>
+            <td style="font-size: 8; text-align: right; border-top: 1px solid black;">&nbsp;</td>
         </tr>
 
     </tbody>

@@ -82,7 +82,7 @@
               </div>
               <div class="pt-1">
                   <button type="button" id="rptDisp" class="btn btn-success">Display</button>
-                  <button type="button" id="rptXls" class="btn btn-warning">Xls</button>
+                  <button type="button" id="rptXls" class="btn btn-warning">XLS</button>
               </div>                                               
             </form>            
           
@@ -299,11 +299,6 @@ $(document).ready(function() {
         
     });
 
-    // $('#rptDisp').on('click', function(event) {
-    //     event.preventDefault();
-    //     $('#modRptDisp').modal('show');
-    // });
-
     $('#rptDisp').on('click', function () {
         s_date = $('#start_date').val();
         if (!s_date) {
@@ -341,6 +336,27 @@ $(document).ready(function() {
             error: function (xhr, status, error) {
                 // Handle errors (optional)
                 $('#modalBodyContent').html('<p>Error loading content: ' + error + '</p>');
+            }
+        });
+    });
+
+    $('#rptXls').on('click', function () {
+        let s_date = $('#start_date').val() || '2000-01-01';
+        let e_date = $('#end_date').val() || '2100-01-01';
+        let acc_no = $('#account_no').val() || '0';
+        let acc_no_end = $('#account_no_end').val() || '9999.9999';
+        let code_cost = $('#code_cost').val() || '0';
+        let code_div = $('#code_div').val() || '0';
+
+        $.ajax({
+            url: `rptGenLedSinaXls/${s_date}/${e_date}/${acc_no}/${acc_no_end}/${code_cost}/${code_div}`,
+            method: 'GET',
+            success: function () {
+                const fileUrl = `rptGenLedSinaXls/${s_date}/${e_date}/${acc_no}/${acc_no_end}/${code_cost}/${code_div}`;
+                window.location = fileUrl;
+            },
+            error: function (xhr, status, error) {
+                $('#modalBodyContent').html(`<p>Error loading content: ${error}</p>`);
             }
         });
     });

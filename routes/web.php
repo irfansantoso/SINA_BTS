@@ -2,9 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\Homepage\DashboardHrisController;
-use App\Http\Controllers\Master\SiteHrisController;
-use App\Http\Controllers\Master\DepartmentHrisController;
+use App\Http\Controllers\Homepage\DashboardSinaController;
+use App\Http\Controllers\Master\SiteSinaController;
 use App\Http\Controllers\Master\AccountTypeSinaController;
 use App\Http\Controllers\Master\CurrencySinaController;
 use App\Http\Controllers\Gl\AccountingPeriodSinaController;
@@ -15,8 +14,6 @@ use App\Http\Controllers\Tables\JournalGroupSinaController;
 use App\Http\Controllers\Tables\JournalSourceCodeSinaController;
 use App\Http\Controllers\Forms\JournalSinaController;
 use App\Http\Controllers\Reporting\RptGenLedSinaController;
-use App\Http\Controllers\Master\EmailReceiverHrisController;
-use App\Http\Controllers\Forms\EmployeeHrisController;
 use App\Http\Controllers\Email\ContractController;
 
 
@@ -51,15 +48,11 @@ Route::put('users/update/{id}', [UserController::class, 'update'])->name('users.
 Route::get('profile',[UserController::class, 'profile'])->name('profile')->middleware('auth');
 Route::post('profile', [UserController::class, 'profile_edit'])->name('profile.edit')->middleware('auth');
 
-Route::get('dashboard', [DashboardHrisController::class, 'dashboard'])->name('dashboard')->middleware('auth');
-Route::get('dashboard/json', [DashboardHrisController::class, 'employee_data'])->name('dashboard.data')->middleware('auth');
+Route::get('dashboard', [DashboardSinaController::class, 'dashboard'])->name('dashboard')->middleware('auth');
 
 // Master
-Route::get('siteHris',[SiteHrisController::class, 'site_browse'])->name('siteHris')->middleware('auth');
-Route::post('siteHris', [SiteHrisController::class, 'site_add'])->name('siteHris.add')->middleware('auth');
-
-Route::get('departmentHris',[DepartmentHrisController::class, 'department_browse'])->name('departmentHris')->middleware('auth');
-Route::post('departmentHris', [DepartmentHrisController::class, 'department_add'])->name('departmentHris.add')->middleware('auth');
+Route::get('siteSina',[SiteSinaController::class, 'site_browse'])->name('siteSina')->middleware('auth');
+Route::post('siteSina', [SiteSinaController::class, 'site_add'])->name('siteSina.add')->middleware('auth');
 
 Route::get('accountTypeSina',[AccountTypeSinaController::class, 'accountTypeSina_browse'])->name('accountTypeSina')->middleware('auth');
 Route::get('accountTypeSina/json', [AccountTypeSinaController::class, 'accountTypeSina_data'])->name('accountTypeSina.data')->middleware('auth');
@@ -145,25 +138,7 @@ Route::delete('accountingPeriodSina/delete/{id_period}', [AccountingPeriodSinaCo
 Route::get('rptGenLedSina',[RptGenLedSinaController::class, 'rptGenLedSina_browse'])->name('rptGenLedSina')->middleware('auth');
 Route::get('rptGenLedSina/setPeriode/{month}/{year}', [RptGenLedSinaController::class, 'rptGenLedSina_setPeriode'])->name('rptGenLedSina.setPeriode');
 Route::get('rptGenLedSinaModal/{s_date}/{e_date}/{acc_no}/{acc_no_end}/{code_cost}/{code_div}', [RptGenLedSinaController::class, 'rptGenLedSina_modal'])->name('rptGenLedSinaModal')->middleware('auth');
-
-Route::get('emailReceiverHris',[EmailReceiverHrisController::class, 'emailReceiver_browse'])->name('emailReceiverHris')->middleware('auth');
-Route::post('emailReceiverHris', [EmailReceiverHrisController::class, 'emailReceiver_add'])->name('emailReceiverHris.add')->middleware('auth');
-Route::post('emailReceiverHris/edit', [EmailReceiverHrisController::class, 'emailReceiver_edit'])->name('emailReceiverHris.edit')->middleware('auth');
-
-// Forms
-Route::get('employeeHris',[EmployeeHrisController::class, 'employee'])->name('employeeHris')->middleware('auth');
-Route::get('employeeHris_add',[EmployeeHrisController::class, 'employee_add'])->name('employeeHris_add')->middleware('auth');
-Route::post('employeeHris', [EmployeeHrisController::class, 'employee_save'])->name('employeeHris.save')->middleware('auth');
-Route::get('employeeHris/json', [EmployeeHrisController::class, 'employee_data'])->name('employeeHris.data')->middleware('auth');
-Route::get('employeeHris/detail/{nik}', [EmployeeHrisController::class, 'employee_detail'])->name('employeeHris.detail');
-Route::get('employeeHris/edit/{id}', [EmployeeHrisController::class, 'employee_edit'])->name('employeeHris.edit');
-Route::put('employeeHris/update/{id}', [EmployeeHrisController::class, 'employee_update'])->name('employeeHris.update');
-Route::post('employeeHris/emp_renewal', [EmployeeHrisController::class, 'employee_emp_renewal'])->name('employeeHris.emp_renewal')->middleware('auth');
-Route::post('employeeHris/emp_del', [EmployeeHrisController::class, 'employee_emp_del'])->name('employeeHris.emp_del')->middleware('auth');
-
-//Emails
-Route::get('/send-expired-contracts-email', [ContractController::class, 'sendExpiredContractsEmail']);
-
+Route::get('rptGenLedSinaXls/{s_date}/{e_date}/{acc_no}/{acc_no_end}/{code_cost}/{code_div}', [RptGenLedSinaController::class, 'rptGenLedSina_xls'])->name('rptGenLedSinaXls')->middleware('auth');
 
 
 Route::get('password', [UserController::class, 'password'])->name('password');
