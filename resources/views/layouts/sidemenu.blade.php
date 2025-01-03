@@ -37,7 +37,7 @@
       <span class="menu-header-text">Menu</span>
     </li>    
 
-    <li class="{{ request()->is('users','siteSina','accountTypeSina','currencySina') ? 'menu-item active open' : 'menu-item' }}">
+    <li class="{{ request()->is('users','siteSina','companySina','accountTypeSina','currencySina') ? 'menu-item active open' : 'menu-item' }}">
       <a href="javascript:void(0)" class="menu-link menu-toggle">
         <i class="menu-icon tf-icons ti ti-category"></i>
         <div data-i18n="Master">Master</div>
@@ -47,6 +47,12 @@
           <a href="{{ route('users') }}" class="menu-link">
             <i class="menu-icon tf-icons ti ti-users"></i>
             <div data-i18n="Users">Users</div>
+          </a>
+        </li>
+        <li class="{{ request()->is('companySina') ? 'menu-item active' : 'menu-item' }}">
+          <a href="{{ route('companySina') }}" class="menu-link">
+            <i class="menu-icon tf-icons ti ti-atom-2"></i>
+            <div data-i18n="Company">Company</div>
           </a>
         </li>
         <li class="{{ request()->is('siteSina') ? 'menu-item active' : 'menu-item' }}">

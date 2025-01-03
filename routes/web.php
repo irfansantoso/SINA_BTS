@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Homepage\DashboardSinaController;
+use App\Http\Controllers\Master\CompanySinaController;
 use App\Http\Controllers\Master\SiteSinaController;
 use App\Http\Controllers\Master\AccountTypeSinaController;
 use App\Http\Controllers\Master\CurrencySinaController;
@@ -51,6 +52,13 @@ Route::post('profile', [UserController::class, 'profile_edit'])->name('profile.e
 Route::get('dashboard', [DashboardSinaController::class, 'dashboard'])->name('dashboard')->middleware('auth');
 
 // Master
+Route::get('companySina',[CompanySinaController::class, 'companySina_browse'])->name('companySina')->middleware('auth');
+Route::get('companySina/json', [CompanySinaController::class, 'companySina_data'])->name('companySina.data')->middleware('auth');
+Route::post('companySina', [CompanySinaController::class, 'companySina_add'])->name('companySina.add')->middleware('auth');
+Route::get('companySina/{id_company}', [CompanySinaController::class, 'companySina_edit'])->name('companySina.edit');
+Route::put('companySina/update/{id_company}', [CompanySinaController::class, 'companySina_update'])->name('companySina.update');
+Route::delete('companySina/delete/{id_company}', [CompanySinaController::class, 'companySina_delete'])->name('companySina.delete');
+
 Route::get('siteSina',[SiteSinaController::class, 'site_browse'])->name('siteSina')->middleware('auth');
 Route::post('siteSina', [SiteSinaController::class, 'site_add'])->name('siteSina.add')->middleware('auth');
 
