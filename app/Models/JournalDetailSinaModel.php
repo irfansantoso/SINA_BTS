@@ -27,6 +27,7 @@ class JournalDetailSinaModel extends Model
         'code_period',
         'journal_date',
         'due_date',
+        'general_account',
         'account_no',
         'code_cost',
         'code_div',

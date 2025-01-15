@@ -150,7 +150,7 @@
       </ul>
     </li>
     <!-- Forms -->
-    <li class="{{ request()->is('rptGenLedSina') ? 'menu-item active open' : 'menu-item' }}">
+    <li class="{{ request()->is('rptGenLedSina','rptTrBalanceSina') ? 'menu-item active open' : 'menu-item' }}">
       <a href="javascript:void(0)" class="menu-link menu-toggle">
         <i class="menu-icon tf-icons ti ti-table"></i>
         <div data-i18n="Report">Report</div>
@@ -160,6 +160,12 @@
           <a href="{{ route('rptGenLedSina') }}" class="menu-link">
             <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
             <div data-i18n="General Ledger">General Ledger</div>
+          </a>
+        </li>
+        <li class="{{ request()->is('rptTrBalanceSina') ? 'menu-item active' : 'menu-item' }}">
+          <a href="{{ route('rptTrBalanceSina') }}" class="menu-link">
+            <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
+            <div data-i18n="Trial Balance">Trial Balance</div>
           </a>
         </li>        
       </ul>

@@ -96,6 +96,7 @@
                     <div class="col-md-2">
                         <label class="col-form-label text-end" for="basic-default-name">No. Perkiraan</label>             
                         <input type="text" data-bs-toggle="modal" data-bs-target="#modAccList" class="form-control" id="account_no" name="account_no" placeholder="Klik here.." readonly required>
+                        <input type="hidden" class="form-control" id="general_account" name="general_account" readonly required>
                     </div>
                     <div class="col-md-1">
                         <label class="col-form-label text-end" for="basic-default-name">Biaya</label>             
@@ -504,7 +505,7 @@ $(document).ready(function() {
                 data: 'action',
                 render: function (data, type, row, meta) {
                     return (
-                        `<a href="javascript:;" onclick="getAccountDetail('${row.account_no}', '${row.account_name}')" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-warning" title="Pick" class="btn btn-sm btn-icon item-edit"><i class="text-warning ti ti-check"></i></a>`
+                        `<a href="javascript:;" onclick="getAccountDetail('${row.general_account}', '${row.account_no}', '${row.account_name}')" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-warning" title="Pick" class="btn btn-sm btn-icon item-edit"><i class="text-warning ti ti-check"></i></a>`
                     );
                 },
                 orderable: false, searchable: false
@@ -624,8 +625,9 @@ $(document).ready(function() {
     });
 });
 
-function getAccountDetail(account_no, account_name) {
+function getAccountDetail(general_account, account_no, account_name) {
     // Isi field 'account_no' dan 'account_name' di form
+    $('#general_account').val(general_account);
     $('#account_no').val(account_no);
     $('#account_name').val(account_name);
 
@@ -861,20 +863,28 @@ function addJournalSina() {
             }); 
         },
         error: function(xhr) {
-            var errors = xhr.responseJSON.errors; // Ambil pesan error dari response JSON
-            var errorMessages = '';
+            var errorMessage = '';
 
-            // Loop melalui setiap error dan gabungkan menjadi satu pesan
-            $.each(errors, function(key, value) {
-                errorMessages += value[0] + '<br>';
-            });
+            // Periksa apakah respon JSON memiliki kunci 'error'
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                errorMessage = xhr.responseJSON.error; // Ambil pesan error dari kunci 'error'
+            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                // Jika ada validation errors, gabungkan pesan-pesan error
+                var errors = xhr.responseJSON.errors;
+                $.each(errors, function(key, value) {
+                    errorMessage += value[0] + '<br>';
+                });
+            } else {
+                errorMessage = "Terjadi kesalahan tak terduga."; // Pesan default jika error tidak terduga
+            }
 
+            // Tampilkan error menggunakan SweetAlert
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                html: errorMessages, // Menampilkan pesan error dalam HTML
+                html: errorMessage, // Gunakan `html` untuk mendukung format HTML
                 customClass: {
-                  confirmButton: 'btn btn-danger'
+                    confirmButton: 'btn btn-danger'
                 },
                 buttonsStyling: false
             });
@@ -890,6 +900,7 @@ function addDetailJournalSina() {
     var description = $('#description').val();
     var journal_date = $('#journal_date').val();
     var due_date = $('#due_date').val();
+    var general_account = $('#general_account').val();
     var account_no = $('#account_no').val();
     var code_cost = $('#code_cost').val();
     var code_div = $('#code_div').val();
@@ -971,6 +982,7 @@ function addDetailJournalSina() {
             description: description,
             journal_date: journal_date,
             due_date: due_date,
+            general_account: general_account,
             account_no: account_no,
             code_cost: code_cost,
             code_div: code_div,
@@ -1068,6 +1080,7 @@ function editJournalDetail(id_jd) {
 function updateJournalDetailSina(id_jd) {
     var journal_date = $('#journal_date').val();
     var due_date = $('#due_date').val();
+    var general_account = $('#general_account').val();
     var account_no = $('#account_no').val();
     var code_cost = $('#code_cost').val();
     var code_div = $('#code_div').val();
@@ -1090,6 +1103,7 @@ function updateJournalDetailSina(id_jd) {
             _token: '{{ csrf_token() }}',
             journal_date: journal_date,
             due_date: due_date,
+            general_account: general_account,
             account_no: account_no,
             code_cost: code_cost,
             code_div: code_div,

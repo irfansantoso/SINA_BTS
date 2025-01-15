@@ -15,6 +15,7 @@ use App\Http\Controllers\Tables\JournalGroupSinaController;
 use App\Http\Controllers\Tables\JournalSourceCodeSinaController;
 use App\Http\Controllers\Forms\JournalSinaController;
 use App\Http\Controllers\Reporting\RptGenLedSinaController;
+use App\Http\Controllers\Reporting\RptTrBalanceSinaController;
 use App\Http\Controllers\Email\ContractController;
 
 
@@ -147,6 +148,11 @@ Route::get('rptGenLedSina',[RptGenLedSinaController::class, 'rptGenLedSina_brows
 Route::get('rptGenLedSina/setPeriode/{month}/{year}', [RptGenLedSinaController::class, 'rptGenLedSina_setPeriode'])->name('rptGenLedSina.setPeriode');
 Route::get('rptGenLedSinaModal/{s_date}/{e_date}/{acc_no}/{acc_no_end}/{code_cost}/{code_div}', [RptGenLedSinaController::class, 'rptGenLedSina_modal'])->name('rptGenLedSinaModal')->middleware('auth');
 Route::get('rptGenLedSinaXls/{s_date}/{e_date}/{acc_no}/{acc_no_end}/{code_cost}/{code_div}', [RptGenLedSinaController::class, 'rptGenLedSina_xls'])->name('rptGenLedSinaXls')->middleware('auth');
+
+Route::get('rptTrBalanceSina',[RptTrBalanceSinaController::class, 'rptTrBalanceSina_browse'])->name('rptTrBalanceSina')->middleware('auth');
+Route::get('rptTrBalanceSina/setPeriode/{month}/{year}', [RptTrBalanceSinaController::class, 'rptTrBalanceSina_setPeriode'])->name('rptTrBalanceSina.setPeriode');
+Route::get('rptTrBalanceSinaModal/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_div}', [RptTrBalanceSinaController::class, 'rptTrBalanceSina_modal'])->name('rptTrBalanceSinaModal')->middleware('auth');
+Route::get('rptTrBalanceSinaXls/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_div}', [RptTrBalanceSinaController::class, 'rptTrBalanceSina_xls'])->name('rptTrBalanceSinaXls')->middleware('auth');
 
 
 Route::get('password', [UserController::class, 'password'])->name('password');

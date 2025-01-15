@@ -8,6 +8,7 @@ use App\Models\JournalDetailSinaModel;
 use App\Models\JournalSourceCodeSinaModel;
 use App\Models\JournalGroupSinaModel;
 use App\Models\TempAccountingPeriodSinaModel;
+use App\Models\AccountingPeriodSinaModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -180,14 +181,18 @@ class JournalSinaController extends Controller
 
     public function journalSina_add(Request $request)
     {
-        // $request->validate([
-        //     'account_no' => 'required|unique:tb_account_list',
-        //     'account_name' => 'required'
-        // ]);
         $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
                                 ->where('user_acc_period', Auth::user()->username)
                                 ->first(); // Fetch a single record
+        $getRangePeriod = AccountingPeriodSinaModel::select('start_date', 'end_date')
+                                ->where('code_period', $getYearActive->code_period)
+                                ->first(); // Fetch a single record
+
         $cp = $getYearActive->code_period;
+
+        if($request->journal_date < $getRangePeriod->start_date || $request->journal_date > $getRangePeriod->end_date){
+            return response()->json(['error' => 'Tanggal jurnal diluar dari tanggal periode aktive!'], 400);
+        }
 
         $no_jjrc = $request->cpx.$request->journal_jrc_no;
         $journalHeaderSina = new JournalHeaderSinaModel([
@@ -202,7 +207,6 @@ class JournalSinaController extends Controller
         ]);
 
         $journalHeaderSina->save();        
-        // return redirect()->route('journalSina')->with('success', 'Tambah data sukses!');
         return response()->json(['success' => 'Tambah data sukses!']);
     }     
 
@@ -305,6 +309,7 @@ class JournalSinaController extends Controller
             'code_period' => $request->cpx,
             'journal_date' => $request->journal_date,
             'due_date' => $request->due_date,
+            'general_account' => $request->general_account,
             'account_no' => $request->account_no,
             'code_cost' => $request->code_cost,
             'code_div' => $request->code_div,
@@ -342,7 +347,8 @@ class JournalSinaController extends Controller
         $journalDetailSinaUpdate = JournalDetailSinaModel::where('id_journal_detail', $id_jd)
                                                         ->firstOrFail();
         $journalDetailSinaUpdate->journal_date = $request->input('journal_date');
-        $journalDetailSinaUpdate->due_date = $request->input('due_date');                       
+        $journalDetailSinaUpdate->due_date = $request->input('due_date');    
+        $journalDetailSinaUpdate->general_account = $request->input('general_account');
         $journalDetailSinaUpdate->account_no = $request->input('account_no');
         $journalDetailSinaUpdate->code_cost = $request->input('code_cost');
         $journalDetailSinaUpdate->code_div = $request->input('code_div');

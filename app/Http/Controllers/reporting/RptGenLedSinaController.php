@@ -48,7 +48,7 @@ class RptGenLedSinaController extends Controller
         $getPeriode = AccountingPeriodSinaModel::select('start_date','end_date')
                         ->where('year', $year)
                         ->where('month', $month)
-                        ->first(); // Fetch a single record        
+                        ->first();
 
         if (!$getPeriode) {
             return response()->json([
@@ -108,6 +108,11 @@ class RptGenLedSinaController extends Controller
         // Ambil saldo awal
         $beginningBalance = DB::table('tb_journal_detail')
             ->where('journal_date', '<', $s_date)
+            ->where(function($query) {
+                $query->where('account_no', 'like', '1%')
+                      ->orWhere('account_no', 'like', '2%')
+                      ->orWhere('account_no', 'like', '3%');
+            })
             ->selectRaw("
                 account_no,
                 SUM(debit - kredit) as beginning_balance
@@ -122,6 +127,19 @@ class RptGenLedSinaController extends Controller
             // Hitung debit, credit, dan balance awal
             $transactions = [];
             $currentBalance = $beginBalance;
+
+            // Tambahkan beginning balance
+            $transactions[] = (object) [
+                'formatted_date' => '',
+                'journal_no' => '',
+                'code_cost' => '',
+                'code_div' => '',
+                'description_detail' => 'BEGINNING BALANCE',
+                'debit' => 0,
+                'kredit' => 0,
+                'ending_balance' => abs($currentBalance),
+                'dc' => $currentBalance >= 0 ? 'D' : 'C',
+            ];
 
             foreach ($items as $transaction) {
                 $currentBalance += $transaction->debit - $transaction->kredit;
@@ -155,7 +173,7 @@ class RptGenLedSinaController extends Controller
 
         $data['totalDebit'] = $reportData->sum('debit');
         $data['totalCredit'] = $reportData->sum('credit');
-        $data['totalBalance'] = $data['totalDebit'] - $data['totalCredit'];
+        $data['totalBalance'] = (($data['totalDebit'] - $data['totalCredit']) + $reportData->sum('beginning_balance'));
         $data['reportData'] = $reportData;
 
         return view('reporting/rptGenLedSinaModal', $data);
@@ -203,6 +221,11 @@ class RptGenLedSinaController extends Controller
         // Ambil saldo awal
         $beginningBalance = DB::table('tb_journal_detail')
             ->where('journal_date', '<', $s_date)
+            ->where(function($query) {
+                $query->where('account_no', 'like', '1%')
+                      ->orWhere('account_no', 'like', '2%')
+                      ->orWhere('account_no', 'like', '3%');
+            })
             ->selectRaw("
                 account_no,
                 SUM(debit - kredit) as beginning_balance
@@ -217,6 +240,19 @@ class RptGenLedSinaController extends Controller
             // Hitung debit, credit, dan balance awal
             $transactions = [];
             $currentBalance = $beginBalance;
+
+            // Tambahkan beginning balance
+            $transactions[] = (object) [
+                'formatted_date' => '',
+                'journal_no' => '',
+                'code_cost' => '',
+                'code_div' => '',
+                'description_detail' => 'BEGINNING BALANCE',
+                'debit' => 0,
+                'kredit' => 0,
+                'ending_balance' => abs($currentBalance),
+                'dc' => $currentBalance >= 0 ? 'D' : 'C',
+            ];
 
             foreach ($items as $transaction) {
                 $currentBalance += $transaction->debit - $transaction->kredit;
@@ -250,7 +286,7 @@ class RptGenLedSinaController extends Controller
 
         $data['totalDebit'] = $reportData->sum('debit');
         $data['totalCredit'] = $reportData->sum('credit');
-        $data['totalBalance'] = $data['totalDebit'] - $data['totalCredit'];
+        $data['totalBalance'] = (($data['totalDebit'] - $data['totalCredit']) + $reportData->sum('beginning_balance'));
         $data['reportData'] = $reportData;
 
         $tgl = now()->format('Ymd_His');
@@ -258,8 +294,8 @@ class RptGenLedSinaController extends Controller
         return Excel::download(
             new ExportGenLedXls(
                 $reportData,
-                $s_date,
-                $e_date,
+                $data['s_date'],
+                $data['e_date'],
                 $data['totalDebit'], 
                 $data['totalCredit'], 
                 $data['totalBalance']
