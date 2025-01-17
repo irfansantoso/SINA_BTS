@@ -167,6 +167,12 @@
             <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
             <div data-i18n="Trial Balance">Trial Balance</div>
           </a>
+        </li>
+        <li class="{{ request()->is('rptTbSummarySina') ? 'menu-item active' : 'menu-item' }}">
+          <a href="{{ route('rptTbSummarySina') }}" class="menu-link">
+            <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
+            <div data-i18n="TB Summary">TB Summary</div>
+          </a>
         </li>        
       </ul>
     </li> 

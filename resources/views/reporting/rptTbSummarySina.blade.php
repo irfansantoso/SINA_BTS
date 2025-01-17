@@ -1,11 +1,33 @@
 @extends('template')
-@section('content')    
+@section('content')
+    @if(session('success'))
+      <script type="text/javascript">
+      function mssge() {
+        Swal.fire({
+          title: "{{ session('success') }}",
+          text: 'You clicked the button!',
+          icon: 'success',
+          customClass: {
+            confirmButton: 'btn btn-primary'
+          },
+          buttonsStyling: false
+        });
+      }
+      window.onload = mssge;
+      </script>
+    @endif
+
+    @if (count($errors) > 0)
+      @foreach ($errors->all() as $error)
+        <p class="alert alert-danger"><button type="button" class="close" data-dismiss="alert">×</button>{{ $error }}</p>
+      @endforeach
+    @endif
     
     <div class="row">
       <div class="col-xxl">
         <div class="card mb-4">
           <div class="card-header d-flex align-items-center justify-content-between">
-            <h5 class="mb-0" id="formTitle">Trial Balance</h5>            
+            <h5 class="mb-0" id="formTitle">Trial Balance Summary</h5>            
           </div>
           
             <form id="formAuthentication" class="card-body form-horizontal">
@@ -248,7 +270,7 @@ $(document).ready(function() {
             code_div = '0';
         }
         $.ajax({
-            url: `rptTrBalanceSinaModal/${m_date}/${y_date}/${acc_no}/${acc_no_end}/${code_div}`, // Use your route name
+            url: `rptTbSummarySinaModal/${m_date}/${y_date}/${acc_no}/${acc_no_end}/${code_div}`, // Use your route name
             method: 'GET',
             success: function (data) {
                 // Inject the content into the modal body
@@ -287,17 +309,29 @@ $(document).ready(function() {
         }
 
         $.ajax({
-            url: `rptTrBalanceSinaXls/${m_date}/${y_date}/${acc_no}/${acc_no_end}/${code_div}`,
+            url: `rptTbSummarySinaXls/${m_date}/${y_date}/${acc_no}/${acc_no_end}/${code_div}`,
             method: 'GET',
             success: function () {
-                const fileUrl = `rptTrBalanceSinaXls/${m_date}/${y_date}/${acc_no}/${acc_no_end}/${code_div}`;
+                const fileUrl = `rptTbSummarySinaXls/${m_date}/${y_date}/${acc_no}/${acc_no_end}/${code_div}`;
                 window.location = fileUrl;
             },
             error: function (xhr, status, error) {
                 $('#modalBodyContent').html(`<p>Error loading content: ${error}</p>`);
             }
         });
-    }); 
+    });
+
+    $('#kurs').on('input', function(event) {
+        event.preventDefault();
+        debit = $('#debit').val();
+        kredit = $('#kredit').val();
+        kurs = $('#kurs').val();
+        description = $('#description').val();
+
+        jum_ttl = (debit+kredit)*kurs;
+        $('#jumlah_total').val(jum_ttl);
+        $('#description_detail').val(description);        
+    });    
 
     $('#modAccList').on('shown.bs.modal', function () {
         $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
@@ -311,7 +345,7 @@ $(document).ready(function() {
 
 function setPeriode(month,year) {
     $.ajax({
-        url: `rptTrBalanceSina/setPeriode/${month}/${year}`, // Fetch data by code
+        url: `rptTbSummarySina/setPeriode/${month}/${year}`, // Fetch data by code
         type: 'GET',
         success: function(response) {
             if (response.status === 'success') {
@@ -400,6 +434,8 @@ $(document).ready(function() {
         order: [[1, 'asc']]
     });
 });
+
+
 
 var table_modDiv;
 $(document).ready(function() {
