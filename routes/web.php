@@ -157,6 +157,7 @@ Route::get('rptTrBalanceSinaXls/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_di
 
 Route::get('rptTbSummarySina',[RptTbSummarySinaController::class, 'rptTbSummarySina_browse'])->name('rptTbSummarySina')->middleware('auth');
 Route::get('rptTbSummarySina/setPeriode/{month}/{year}', [RptTbSummarySinaController::class, 'rptTbSummarySina_setPeriode'])->name('rptTbSummarySina.setPeriode');
+Route::get('rptTbSummarySinaModal/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_div}', [RptTbSummarySinaController::class, 'rptTbSummarySina_modal'])->name('rptTbSummarySinaModal')->middleware('auth');
 
 
 Route::get('password', [UserController::class, 'password'])->name('password');

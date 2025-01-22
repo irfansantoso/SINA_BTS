@@ -150,7 +150,7 @@
       </ul>
     </li>
     <!-- Forms -->
-    <li class="{{ request()->is('rptGenLedSina','rptTrBalanceSina') ? 'menu-item active open' : 'menu-item' }}">
+    <li class="{{ request()->is('rptGenLedSina','rptTrBalanceSina','rptTbSummarySina') ? 'menu-item active open' : 'menu-item' }}">
       <a href="javascript:void(0)" class="menu-link menu-toggle">
         <i class="menu-icon tf-icons ti ti-table"></i>
         <div data-i18n="Report">Report</div>
