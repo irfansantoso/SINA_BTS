@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css?family=Tangerine" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
-    <title>Dashboard - SINA</title>
+    <title>Dashboard - SINA-BTS</title>
 
     <meta name="description" content="" />
 

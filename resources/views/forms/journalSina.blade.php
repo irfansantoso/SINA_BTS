@@ -423,9 +423,13 @@ $(document).ready(function() {
 
     $('#code_jgr').on('change', function(event) {
         event.preventDefault();
+        j_jrc_no = '1111';
         c_jgr = $('#code_jgr').val();
+        c_jrc = 'XXX'
          
         showJSC(c_jgr);
+        setFormByHeader(j_jrc_no,c_jgr,c_jrc);
+        setDebKre(j_jrc_no,c_jgr,c_jrc);
         $('.form-detail').hide();
         $('.table-detail').hide();
         $('#journal_jrc_no').val("");
@@ -433,22 +437,31 @@ $(document).ready(function() {
         $('#journal_date').val("");        
         $('#due_date').val("");
         $('#description').val("");
-        // table.ajax.reload();     
+        $('#total_debit').html("");
+        $('#total_kredit').html("");
+        $('#difference').html("");
+        table.ajax.reload();     
         // alert(c_jgr);
     });
 
     $('#code_jrc').on('change', function(event) {
         event.preventDefault();
+        j_jrc_no = '1111';
         c_jgr = $('#code_jgr').val();
         c_jrc = $('#code_jrc').val();
          
         showJsrNo(c_jgr,c_jrc);
+        setFormByHeader(j_jrc_no,c_jgr,c_jrc);
+        setDebKre(j_jrc_no,c_jgr,c_jrc);
         $('.form-detail').show();
         $('.table-detail').show();
         $('#journal_date').val("");
         $('#due_date').val("");
         $('#description').val("");
-        // table.ajax.reload();      
+        $('#total_debit').html("");
+        $('#total_kredit').html("");
+        $('#difference').html("");
+        table.ajax.reload();      
         // alert(c_jgr);
     });
 
@@ -460,6 +473,9 @@ $(document).ready(function() {
          
         setFormByHeader(j_jrc_no,c_jgr,c_jrc);
         setDebKre(j_jrc_no,c_jgr,c_jrc);
+        $('#total_debit').html("");
+        $('#total_kredit').html("");
+        $('#difference').html("");
         table.ajax.reload();
         
     });
@@ -813,6 +829,7 @@ function addJournalSina() {
     var description = $('#description').val();
     var journal_date = $('#journal_date').val();
     var due_date = $('#due_date').val();
+    var jjrc_no = cpx+journal_jrc_no;
 
     if (code_jgr === '' || code_jrc === '' || journal_jrc_no === '') {
         Swal.fire({
@@ -825,7 +842,53 @@ function addJournalSina() {
             buttonsStyling: false
         });
         return;
-    }        
+    }   
+
+    if (journal_date === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Tanggal tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        }).then(() => {
+            // Fokus ke input setelah SweetAlert ditutup
+            $('#journal_date').focus();
+        });
+        return;
+    }
+    if (due_date === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Tanggal jatuh tempo tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        }).then(() => {
+            // Fokus ke input setelah SweetAlert ditutup
+            $('#due_date').focus();
+        });
+        return;
+    }
+    if (account_no === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No Perkiraan tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        }).then(() => {
+            // Fokus ke input setelah SweetAlert ditutup
+            $('#account_no').focus();
+        });
+        return;
+    }     
 
     $.ajax({
         url: '{{ route('journalSina.add') }}', // Route for saving data
@@ -845,6 +908,7 @@ function addJournalSina() {
             // $('#journal_jrc_no').val(response.journal_jrc_no);
             // Reload table without resetting pagination
             table.ajax.reload(null, false);
+            
 
             Swal.fire({
                 icon: 'success',
@@ -855,11 +919,24 @@ function addJournalSina() {
                 customClass: {
                   confirmButton: 'btn btn-primary'
                 },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // resetFormAndButton();
+                buttonsStyling: false,
+                timer: 1000, // 1 detik
+                timerProgressBar: true,
+                willClose: () => {
+                    resetFormAndButtonDetail();
+                    $('#formAuthentication').attr('action', `journalSina/update/${jjrc_no}/${code_jgr}/${code_jrc}`);
+                    $('#formTitle').text('Edit Form');
+                    $('#addBtn').text('Edit');
+
+                    $('#formMethod').val('PUT');
+
+                    // Ubah event tombol untuk proses update
+                    $('#addBtn').off('click').on('click', function(event) {
+                        event.preventDefault();
+                        updateJournalSina(jjrc_no, code_jgr, code_jrc);
+                    });
                 }
+                
             }); 
         },
         error: function(xhr) {
@@ -909,8 +986,8 @@ function addDetailJournalSina() {
     var kredit = $('#kredit').val();
     var kurs = $('#kurs').val();
     var jumlah_total = $('#jumlah_total').val();
-    var description_detail = $('#description_detail').val();
-
+    var description_detail = $('#description_detail').val();    
+    var jjrc_no = cpx+journal_jrc_no;
 
     if (code_jgr === '' || code_jrc === '' || journal_jrc_no === '') {
         Swal.fire({
@@ -1009,10 +1086,22 @@ function addDetailJournalSina() {
                 customClass: {
                   confirmButton: 'btn btn-primary'
                 },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
+                buttonsStyling: false,
+                timer: 1000, // 1 detik
+                timerProgressBar: true,
+                willClose: () => {
                     resetFormAndButtonDetail();
+                    $('#formAuthentication').attr('action', `journalSina/update/${jjrc_no}/${code_jgr}/${code_jrc}`);
+                    $('#formTitle').text('Edit Form');
+                    $('#addBtn').text('Edit');
+
+                    $('#formMethod').val('PUT');
+
+                    // Ubah event tombol untuk proses update
+                    $('#addBtn').off('click').on('click', function(event) {
+                        event.preventDefault();
+                        updateJournalSina(jjrc_no, code_jgr, code_jrc);
+                    });
                 }
             }); 
         },
@@ -1205,7 +1294,6 @@ function resetFormAndButtonDetail() {
     $('#account_name').val('').css('background-color', '');
     $('#code_div').val('').css('background-color', '');
     $('#code_currency').val('').css('background-color', '');
-    $('#journal_date').val('').css('background-color', '');
     $('#debit').val('').css('background-color', '');
     $('#kredit').val('').css('background-color', '');
     $('#kurs').val('').css('background-color', '');

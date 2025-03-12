@@ -5,11 +5,11 @@
     <div class="d-none d-lg-flex col-lg-7 p-0">
       <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center">
         <img
-          src="{{asset('admin/assets/img/illustrations/acconting-book.png')}}"
+          src="{{asset('admin/assets/img/illustrations/acconting-book-2.png')}}"
           alt="auth-login-cover"
           class="img-fluid my-5 auth-illustration"
-          data-app-light-img="illustrations/acconting-book.png"
-          data-app-dark-img="illustrations/acconting-book.png"
+          data-app-light-img="illustrations/acconting-book-2.png"
+          data-app-dark-img="illustrations/acconting-book-2.png"
         />
 
         <img
@@ -27,7 +27,7 @@
     <div class="d-flex col-12 col-lg-5 align-items-center p-sm-5 p-4">
       <div class="w-px-400 mx-auto">
 
-        <h3 class="mb-1 fw-bold">Welcome to SINA!</h3>
+        <h3 class="mb-1 fw-bold">Welcome to SINA-BTS!</h3>
         <p class="mb-4">Please sign-in to your account and start the adventure</p>
         @if(session('success'))
         <p class="alert alert-success">{{ session('success') }}</p>
@@ -67,7 +67,7 @@
               <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary d-grid w-100">Sign in</button>
+          <button type="submit" class="btn btn-danger d-grid w-100">Sign in</button>
         </form>        
 
       </div>

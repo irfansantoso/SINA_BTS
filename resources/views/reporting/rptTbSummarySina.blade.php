@@ -321,18 +321,6 @@ $(document).ready(function() {
         });
     });
 
-    $('#kurs').on('input', function(event) {
-        event.preventDefault();
-        debit = $('#debit').val();
-        kredit = $('#kredit').val();
-        kurs = $('#kurs').val();
-        description = $('#description').val();
-
-        jum_ttl = (debit+kredit)*kurs;
-        $('#jumlah_total').val(jum_ttl);
-        $('#description_detail').val(description);        
-    });    
-
     $('#modAccList').on('shown.bs.modal', function () {
         $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
     });

@@ -15,7 +15,7 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
 
-    <title>Login Page | SINA - Sistem Informasi Akunting | BTJ</title>
+    <title>Login Page | SINA - Sistem Informasi Akunting | BTS</title>
 
     <meta name="description" content="" />
 

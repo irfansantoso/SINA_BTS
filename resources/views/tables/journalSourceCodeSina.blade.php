@@ -65,10 +65,6 @@
                     <input type="text" class="form-control" id="code_jrc" name="code_jrc" placeholder="Journal Code">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="basic-default-journal_jrc_no">Journal No.</label>
-                    <input type="text" class="form-control" id="journal_jrc_no" name="journal_jrc_no" placeholder="Journal No">                    
-                </div>
-                <div class="col-md-3">
                     <label class="form-label" for="basic-default-account_no">Account No</label>             
                     <input type="text" data-bs-toggle="modal" data-bs-target="#modAccList" class="form-control" id="account_no" name="account_no" placeholder="Klik here.." readonly>
                 </div>
@@ -96,7 +92,6 @@
               <tr>
                 <th width="15px">No.</th>
                 <th>Journal Code</th>
-                <th>Journal No.</th>
                 <th>Account No.</th>
                 <th>Account Name</th>
                 <th>Action</th>
@@ -159,7 +154,6 @@ $(document).ready(function() {
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'code_jrc', name: 'code_jrc' },
-            { data: 'journal_jrc_no', name: 'journal_jrc_no' },
             { data: 'account_no', name: 'account_no' },
             { data: 'account_name', name: 'account_name' },            
             {
@@ -282,7 +276,6 @@ function addJournalSourceCodeSina() {
     var deb_cre = $('#deb_cre').val();
     var year = $('#year').val();
     var code_jrc = $('#code_jrc').val();
-    var journal_jrc_no = $('#journal_jrc_no').val();
     var account_no = $('#account_no').val();
     var account_name = $('#account_name').val();
 
@@ -308,14 +301,12 @@ function addJournalSourceCodeSina() {
             deb_cre: deb_cre,
             year: year,
             code_jrc: code_jrc,
-            journal_jrc_no: journal_jrc_no,
             account_no: account_no,
             account_name: account_name
         },
         success: function(response) {
             // Reset input fields
             $('#code_jrc').val('').focus();
-            $('#journal_jrc_no').val('');
             $('#account_no').val('');
             $('#account_name').val('');
 
@@ -374,12 +365,11 @@ function editJournalSourceCode(id_jsc) {
             $('#deb_cre').val(journalSourceCodeSina.deb_cre);
             $('#year').val(journalSourceCodeSina.year);
             $('#code_jrc').val(journalSourceCodeSina.code_jrc).focus();
-            $('#journal_jrc_no').val(journalSourceCodeSina.journal_jrc_no);
             $('#account_no').val(journalSourceCodeSina.account_no);
             $('#account_name').val(journalSourceCodeSina.account_name);
 
             // Change background color to yellow
-            $('#deb_cre, #year, #code_jrc, #journal_jrc_no, #account_no, #account_name').css('background-color', '#FFFF99');
+            $('#deb_cre, #year, #code_jrc, #account_no, #account_name').css('background-color', '#FFFF99');
             $('#code_jgr').css('background', '#FFFF99');
 
             // Change the form action to update the user and the button text
@@ -406,7 +396,6 @@ function updateJournalSourceCode(id_jsc) {
     var deb_cre = $('#deb_cre').val();
     var year = $('#year').val();
     var code_jrc = $('#code_jrc').val();
-    var journal_jrc_no = $('#journal_jrc_no').val();
     var account_no = $('#account_no').val();
     var account_name = $('#account_name').val();
 
@@ -420,7 +409,6 @@ function updateJournalSourceCode(id_jsc) {
             deb_cre: deb_cre,
             year: year,
             code_jrc: code_jrc,
-            journal_jrc_no: journal_jrc_no,
             account_no: account_no,
             account_name: account_name
             
@@ -428,7 +416,6 @@ function updateJournalSourceCode(id_jsc) {
         success: function(journalSourceCodeSina) {
             // Reset form fields
             $('#code_jrc').val('').focus();
-            $('#journal_jrc_no').val('');
             $('#account_no').val('');
             $('#account_name').val('');            
 
@@ -454,7 +441,6 @@ function resetFormAndButton() {
     $('#deb_cre').css('background-color', '');
     $('#year').css('background-color', '');
     $('#code_jrc').val('').css('background-color', '').focus();
-    $('#journal_jrc_no').val('').css('background-color', '');
     $('#account_no').val('').css('background-color', '');
     $('#account_name').val('').css('background-color', '');    
 

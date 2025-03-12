@@ -20,19 +20,6 @@ use App\Http\Controllers\Reporting\RptTbSummarySinaController;
 use App\Http\Controllers\Email\ContractController;
 
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
-// Route::get('view', function () {
-//     return view('view', ['title' => '']);
-// })->name('view');
 Route::get('/', function () {
     return view('login', ['title' => '']);
 })->name('login');
@@ -158,6 +145,7 @@ Route::get('rptTrBalanceSinaXls/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_di
 Route::get('rptTbSummarySina',[RptTbSummarySinaController::class, 'rptTbSummarySina_browse'])->name('rptTbSummarySina')->middleware('auth');
 Route::get('rptTbSummarySina/setPeriode/{month}/{year}', [RptTbSummarySinaController::class, 'rptTbSummarySina_setPeriode'])->name('rptTbSummarySina.setPeriode');
 Route::get('rptTbSummarySinaModal/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_div}', [RptTbSummarySinaController::class, 'rptTbSummarySina_modal'])->name('rptTbSummarySinaModal')->middleware('auth');
+Route::get('rptTbSummarySinaXls/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_div}', [RptTbSummarySinaController::class, 'rptTbSummarySina_xls'])->name('rptTbSummarySinaXls')->middleware('auth');
 
 
 Route::get('password', [UserController::class, 'password'])->name('password');

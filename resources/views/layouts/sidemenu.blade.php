@@ -9,7 +9,7 @@
           class=""
         />
       </span>
-      <span class="app-brand-text demo menu-text fw-bold">SINA-BTJ</span>
+      <span class="app-brand-text demo menu-text fw-bold">SINA-BTS</span>
     </a>
 
     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
@@ -137,7 +137,7 @@
     <!-- Forms -->
     <li class="{{ request()->is('journalSina') ? 'menu-item active open' : 'menu-item' }}">
       <a href="javascript:void(0)" class="menu-link menu-toggle">
-        <i class="menu-icon tf-icons ti ti-table"></i>
+        <i class="menu-icon tf-icons ti ti-file-invoice"></i>
         <div data-i18n="Journal">Journal</div>
       </a>
       <ul class="menu-sub">
@@ -152,7 +152,7 @@
     <!-- Forms -->
     <li class="{{ request()->is('rptGenLedSina','rptTrBalanceSina','rptTbSummarySina') ? 'menu-item active open' : 'menu-item' }}">
       <a href="javascript:void(0)" class="menu-link menu-toggle">
-        <i class="menu-icon tf-icons ti ti-table"></i>
+        <i class="menu-icon tf-icons ti ti-report"></i>
         <div data-i18n="Report">Report</div>
       </a>
       <ul class="menu-sub">

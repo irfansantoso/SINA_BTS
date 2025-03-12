@@ -12,12 +12,13 @@ class ExportTrBalanceXls implements FromView
     protected $y_date;
     protected $total;
 
-    public function __construct($reportData, $m_date, $y_date, $total)
+    public function __construct($reportData, $m_date, $y_date, $total, $currProfitLosskredit)
     {
         $this->reportData = $reportData;
         $this->m_date = $m_date;
         $this->y_date = $y_date;
         $this->total = $total;
+        $this->currProfitLosskredit = $currProfitLosskredit;
     }
 
     public function view(): View
@@ -27,6 +28,7 @@ class ExportTrBalanceXls implements FromView
             'm_date' => $this->m_date,
             'y_date' => $this->y_date,
             'total' => $this->total,
+            'currProfitLosskredit' => $this->currProfitLosskredit
         ]);
     }
 

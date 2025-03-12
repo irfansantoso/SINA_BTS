@@ -89,7 +89,11 @@ class RptGenLedSinaController extends Controller
                 jd.code_div,
                 jd.description_detail,
                 jd.debit,
-                jd.kredit
+                jd.kredit,
+                CASE
+                    WHEN COALESCE(jd.debit, 0) = 0 THEN 'C'
+                    ELSE 'D'
+                END as d_c
             ")
             ->whereBetween('jd.journal_date', [$s_date, $e_date])
             ->where('jd.account_no','>=', $acc_no)
@@ -111,24 +115,46 @@ class RptGenLedSinaController extends Controller
             ->where(function($query) {
                 $query->where('account_no', 'like', '1%')
                       ->orWhere('account_no', 'like', '2%')
-                      ->orWhere('account_no', 'like', '3%');
+                      ->orWhere('account_no', 'like', '3%')
+                      ->orWhere('account_no', 'like', '4%');
             })
             ->selectRaw("
                 account_no,
-                SUM(debit - kredit) as beginning_balance
+                SUM(
+                    CASE
+                        WHEN COALESCE(debit, 0) = 0 THEN COALESCE(kredit, 0)
+                        ELSE COALESCE(debit, 0) - COALESCE(kredit, 0)
+                    END
+                ) as beginning_balance,
+                MAX(
+                    CASE
+                        WHEN COALESCE(debit, 0) = 0 THEN 'C'
+                        ELSE 'D'
+                    END
+                ) as d_c
             ")
             ->groupBy('account_no')
             ->get();
 
-        // Hitung laporan berdasarkan akun
-        $reportData = $journalDetails->groupBy('account_no')->map(function ($items, $accountNo) use ($beginningBalance) {
-            $beginBalance = $beginningBalance->firstWhere('account_no', $accountNo)?->beginning_balance ?? 0;
+        $allAccounts = $beginningBalance->pluck('account_no')->merge($journalDetails->pluck('account_no'))->unique();
 
-            // Hitung debit, credit, dan balance awal
+        $reportData = $allAccounts->map(function ($accountNo) use ($journalDetails, $beginningBalance) {
+            $items = $journalDetails->where('account_no', $accountNo);
+            $beginBalance = $beginningBalance->firstWhere('account_no', $accountNo)?->beginning_balance ?? 0;
+            $d_c = $beginningBalance->firstWhere('account_no', $accountNo)?->d_c ?? 'D';
+
+            $accountName = $items->first()->account_name ?? 'Unknown';
+            if ($accountName == 'Unknown') {
+                // Run query to fetch the actual account name
+                $accountName = DB::table('tb_account_list')
+                    ->where('account_no', $accountNo)
+                    ->value('account_name');  // Get the account_name based on account_no
+            }
+
             $transactions = [];
             $currentBalance = $beginBalance;
 
-            // Tambahkan beginning balance
+            // Tambahkan BEGINNING BALANCE
             $transactions[] = (object) [
                 'formatted_date' => '',
                 'journal_no' => '',
@@ -138,12 +164,20 @@ class RptGenLedSinaController extends Controller
                 'debit' => 0,
                 'kredit' => 0,
                 'ending_balance' => abs($currentBalance),
-                'dc' => $currentBalance >= 0 ? 'D' : 'C',
+                'dc' => $d_c,
             ];
 
             foreach ($items as $transaction) {
-                $currentBalance += $transaction->debit - $transaction->kredit;
-
+                // if ($transaction->debit == null && $transaction->kredit == null) {
+                //     $currentBalance += $transaction->debit;
+                // }else if($transaction->debit != null && $transaction->kredit == null){
+                //     $currentBalance += $transaction->debit;
+                // }else if($transaction->debit == null && $transaction->kredit != null){
+                //     $currentBalance += $transaction->debit - $transaction->kredit;
+                // }else{
+                //     $currentBalance += $transaction->debit - $transaction->kredit;
+                // }
+                $currentBalance += ($transaction->debit ?? 0) - ($transaction->kredit ?? 0);
                 $transactions[] = (object) [
                     'formatted_date' => $transaction->formatted_date,
                     'journal_no' => $transaction->journal_no,
@@ -158,16 +192,16 @@ class RptGenLedSinaController extends Controller
             }
 
             return [
-                'account_no' => $accountNo,
-                'account_name' => $items->first()->account_name,
-                'beginning_balance' => $beginBalance,
-                'debit' => $items->sum('debit'),
-                'credit' => $items->sum('kredit'),
-                'ending_balance' => abs($currentBalance),
-                'dc' => $currentBalance >= 0 ? 'D' : 'C',
-                'transactions' => $transactions,
-            ];
-        });
+                    'account_no' => $accountNo,
+                    'account_name' => $accountName,
+                    'beginning_balance' => $beginBalance,
+                    'debit' => $items->sum('debit'),
+                    'credit' => $items->sum('kredit'),
+                    'ending_balance' => abs($currentBalance),
+                    'dc' => $currentBalance >= 0 ? 'D' : 'C',
+                    'transactions' => $transactions,
+                ];
+        })->sortBy('account_no');
 
 
 
@@ -202,7 +236,11 @@ class RptGenLedSinaController extends Controller
                 jd.code_div,
                 jd.description_detail,
                 jd.debit,
-                jd.kredit
+                jd.kredit,
+                CASE
+                    WHEN COALESCE(jd.debit, 0) = 0 THEN 'C'
+                    ELSE 'D'
+                END as d_c
             ")
             ->whereBetween('jd.journal_date', [$s_date, $e_date])
             ->where('jd.account_no','>=', $acc_no)
@@ -224,24 +262,46 @@ class RptGenLedSinaController extends Controller
             ->where(function($query) {
                 $query->where('account_no', 'like', '1%')
                       ->orWhere('account_no', 'like', '2%')
-                      ->orWhere('account_no', 'like', '3%');
+                      ->orWhere('account_no', 'like', '3%')
+                      ->orWhere('account_no', 'like', '4%');
             })
             ->selectRaw("
                 account_no,
-                SUM(debit - kredit) as beginning_balance
+                SUM(
+                    CASE
+                        WHEN COALESCE(debit, 0) = 0 THEN COALESCE(kredit, 0)
+                        ELSE COALESCE(debit, 0) - COALESCE(kredit, 0)
+                    END
+                ) as beginning_balance,
+                MAX(
+                    CASE
+                        WHEN COALESCE(debit, 0) = 0 THEN 'C'
+                        ELSE 'D'
+                    END
+                ) as d_c
             ")
             ->groupBy('account_no')
             ->get();
 
-        // Hitung laporan berdasarkan akun
-        $reportData = $journalDetails->groupBy('account_no')->map(function ($items, $accountNo) use ($beginningBalance) {
-            $beginBalance = $beginningBalance->firstWhere('account_no', $accountNo)?->beginning_balance ?? 0;
+        $allAccounts = $beginningBalance->pluck('account_no')->merge($journalDetails->pluck('account_no'))->unique();
 
-            // Hitung debit, credit, dan balance awal
+        $reportData = $allAccounts->map(function ($accountNo) use ($journalDetails, $beginningBalance) {
+            $items = $journalDetails->where('account_no', $accountNo);
+            $beginBalance = $beginningBalance->firstWhere('account_no', $accountNo)?->beginning_balance ?? 0;
+            $d_c = $beginningBalance->firstWhere('account_no', $accountNo)?->d_c ?? 'D';
+
+            $accountName = $items->first()->account_name ?? 'Unknown';
+            if ($accountName == 'Unknown') {
+                // Run query to fetch the actual account name
+                $accountName = DB::table('tb_account_list')
+                    ->where('account_no', $accountNo)
+                    ->value('account_name');  // Get the account_name based on account_no
+            }
+            
             $transactions = [];
             $currentBalance = $beginBalance;
 
-            // Tambahkan beginning balance
+            // Tambahkan BEGINNING BALANCE
             $transactions[] = (object) [
                 'formatted_date' => '',
                 'journal_no' => '',
@@ -251,12 +311,20 @@ class RptGenLedSinaController extends Controller
                 'debit' => 0,
                 'kredit' => 0,
                 'ending_balance' => abs($currentBalance),
-                'dc' => $currentBalance >= 0 ? 'D' : 'C',
+                'dc' => $d_c,
             ];
 
             foreach ($items as $transaction) {
-                $currentBalance += $transaction->debit - $transaction->kredit;
-
+                // if ($transaction->debit == null && $transaction->kredit == null) {
+                //     $currentBalance += $transaction->debit;
+                // }else if($transaction->debit != null && $transaction->kredit == null){
+                //     $currentBalance += $transaction->debit;
+                // }else if($transaction->debit == null && $transaction->kredit != null){
+                //     $currentBalance += $transaction->debit - $transaction->kredit;
+                // }else{
+                //     $currentBalance += $transaction->debit - $transaction->kredit;
+                // }
+                $currentBalance += ($transaction->debit ?? 0) - ($transaction->kredit ?? 0);
                 $transactions[] = (object) [
                     'formatted_date' => $transaction->formatted_date,
                     'journal_no' => $transaction->journal_no,
@@ -271,18 +339,16 @@ class RptGenLedSinaController extends Controller
             }
 
             return [
-                'account_no' => $accountNo,
-                'account_name' => $items->first()->account_name,
-                'beginning_balance' => $beginBalance,
-                'debit' => $items->sum('debit'),
-                'credit' => $items->sum('kredit'),
-                'ending_balance' => abs($currentBalance),
-                'dc' => $currentBalance >= 0 ? 'D' : 'C',
-                'transactions' => $transactions,
-            ];
-        });
-
-
+                    'account_no' => $accountNo,
+                    'account_name' => $accountName,
+                    'beginning_balance' => $beginBalance,
+                    'debit' => $items->sum('debit'),
+                    'credit' => $items->sum('kredit'),
+                    'ending_balance' => abs($currentBalance),
+                    'dc' => $currentBalance >= 0 ? 'D' : 'C',
+                    'transactions' => $transactions,
+                ];
+        })->sortBy('account_no');
 
         $data['totalDebit'] = $reportData->sum('debit');
         $data['totalCredit'] = $reportData->sum('credit');

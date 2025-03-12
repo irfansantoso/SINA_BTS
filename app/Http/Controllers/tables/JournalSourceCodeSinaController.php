@@ -72,7 +72,6 @@ class JournalSourceCodeSinaController extends Controller
             'deb_cre' => $request->deb_cre,
             'year' => $request->year,
             'code_jrc' => $request->code_jrc,
-            'journal_jrc_no' => $request->journal_jrc_no,
             'account_no' => $request->account_no,
             'account_name' => $request->account_name,
             'created_by' => Auth::user()->name
@@ -108,7 +107,6 @@ class JournalSourceCodeSinaController extends Controller
         $journalSourceCodeSina->deb_cre = $request->input('deb_cre');
         $journalSourceCodeSina->year = $request->input('year');
         $journalSourceCodeSina->code_jrc = $request->input('code_jrc');
-        $journalSourceCodeSina->journal_jrc_no = $request->input('journal_jrc_no');
         $journalSourceCodeSina->account_no = $request->input('account_no');
         $journalSourceCodeSina->account_name = $request->input('account_name');        
 
@@ -124,7 +122,7 @@ class JournalSourceCodeSinaController extends Controller
 
     public function journalSourceCodeSina_delete($id_jsc)
     {
-        $accountListSina = AccountListSinaModel::findOrFail($id_jsc);
+        $accountListSina = JournalSourceCodeSinaModel::findOrFail($id_jsc);
         $accountListSina->delete();
         
         return response()->json(['message' => 'Data berhasil dihapus!']);
