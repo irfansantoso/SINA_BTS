@@ -84,6 +84,7 @@
 @section('custom-js')
 <script type="text/javascript">    
 var table; // Declare table variable in global scope
+var currentUser = @json(Auth::user()->username);
 $(document).ready(function() {
         table = $('#accountingPeriodSina_dt').DataTable({
         processing: true,
@@ -98,7 +99,7 @@ $(document).ready(function() {
             {
                 data: 'status_period',
                 render: function (data, type, row, meta) {
-                    if (row.user_acc_period != null) {
+                    if (row.user_acc_period == currentUser) {
                         return `<span class="text-success">Actived</span>`;
                     } else {
                         return (
@@ -236,7 +237,7 @@ function editAccountingPeriod(id_period) {
             $('#end_date').val(accountingPeriodSina.end_date);
 
             // Change background color to yellow
-            $('#year, #month, #start_date').css('background-color', '#FFFF99');
+            $('#year, #month, #start_date, #end_date').css('background-color', '#FFFF99');
 
             // Change the form action to update the user and the button text
             $('#formAuthentication').attr('action', `accountingPeriodSina/update/${id_period}`);

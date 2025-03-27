@@ -36,11 +36,11 @@
               <input type="hidden" name="_method" id="formMethod" value="POST">
               <div class="row mb-3">
                 <label class="col-sm-1 col-form-label" for="basic-default-name">No.Journal</label>
-                <div class="col-sm-1">
+                <div class="col-sm-3">
                     <select class="form-control select2 form-select" name="code_jgr" id="code_jgr" data-allow-clear="true">
                         <option value="XX" selected="selected">--</option>
                         @foreach ($journalGroupSina as $jgs)
-                        <option value="{{ $jgs->code_jgr }}">{{ $jgs->code_jgr }}</option>
+                        <option value="{{ $jgs->code_jgr }}">{{ $jgs->code_jgr }} - {{ $jgs->description_jgr }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -504,6 +504,10 @@ $(document).ready(function() {
         $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
     });
 
+    $('#modCurrList').on('shown.bs.modal', function () {
+        $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+    });
+
 });
 
 var table_mod;
@@ -537,6 +541,11 @@ $(document).ready(function() {
         },
         scrollX: true,
         order: [[1, 'asc']]
+    });
+    
+    $('#modAccList').on('shown.bs.modal', function () {
+        // Fokus pada input pencarian DataTables
+        $('#accountTable_wrapper .dataTables_filter input').focus();
     });
 });
 
@@ -572,6 +581,10 @@ $(document).ready(function() {
         scrollX: true,
         order: [[1, 'asc']]
     });
+    $('#modCostList').on('shown.bs.modal', function () {
+        // Fokus pada input pencarian DataTables
+        $('#costTable_wrapper .dataTables_filter input').focus();
+    });
 });
 
 var table_modDiv;
@@ -606,6 +619,11 @@ $(document).ready(function() {
         scrollX: true,
         order: [[1, 'asc']]
     });
+    $('#modDivList').on('shown.bs.modal', function () {
+        // Fokus pada input pencarian DataTables
+        $('#divTable_wrapper .dataTables_filter input').focus();
+    });
+    
 });
 
 var table_modCurr;
@@ -638,6 +656,10 @@ $(document).ready(function() {
         },
         scrollX: true,
         order: [[1, 'asc']]
+    });
+    $('#modCurrList').on('shown.bs.modal', function () {
+        // Fokus pada input pencarian DataTables
+        $('#currTable_wrapper .dataTables_filter input').focus();
     });
 });
 

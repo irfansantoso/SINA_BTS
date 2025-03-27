@@ -34,7 +34,8 @@ class AccountingPeriodSinaController extends Controller
     {
         // $data = AccountingPeriodSinaModel::orderBy('id_period','asc')
         //                 ->get(['id_period','year','month','start_date','end_date','status_period']);
-
+        $user = Auth::user()->username;
+        
         $data = AccountingPeriodSinaModel::select(
             'accounting_period.id_period',
             'accounting_period.year',
@@ -44,11 +45,14 @@ class AccountingPeriodSinaController extends Controller
             'accounting_period.code_period',
             'temp_acc_period.user_acc_period'
         )
-        ->leftJoin('temp_acc_period', 'accounting_period.code_period', '=', 'temp_acc_period.code_period')
-        ->where(function($query) {
-            $query->where('temp_acc_period.user_acc_period', Auth::user()->username)
-                  ->orWhereNull('temp_acc_period.user_acc_period'); // Include records without a match
+        ->leftJoin('temp_acc_period', function($join) use ($user) {
+            $join->on('accounting_period.code_period', '=', 'temp_acc_period.code_period')
+                 ->where('temp_acc_period.user_acc_period', $user); // Filter berdasarkan user yang login
         })
+        // ->where(function($query) {
+        //     $query->where('temp_acc_period.user_acc_period', Auth::user()->username)
+        //           ->orWhereNull('temp_acc_period.user_acc_period'); // Include records without a match
+        // })
         ->orderBy('accounting_period.id_period', 'asc')
         ->get();
 
@@ -93,10 +97,10 @@ class AccountingPeriodSinaController extends Controller
     {
         // Validate the incoming request
         $request->validate([
-            'year' => $request->year,
-            'month' => $request->month,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date
+            'year' => 'required',
+            'month' => 'required',
+            'start_date' => 'required',
+            'end_date' => 'required'
         ]);
 
         // Find the AccountingPeriodSinaModel by ID

@@ -1,7 +1,7 @@
 <table border="0" cellpadding="0" cellspacing="0" width="100%">
     <tbody>
         <tr>
-            <td align="left" valign="bottom" style="font-size: 8; font-weight: bold;">PT. BTJ</td>
+            <td align="left" valign="bottom" style="font-size: 8; font-weight: bold;">PT. BTS</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
