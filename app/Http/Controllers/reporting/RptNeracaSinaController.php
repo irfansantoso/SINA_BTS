@@ -260,39 +260,71 @@ class RptNeracaSinaController extends Controller
     {
         $result = [];
         $currentGroup = null;
+        $groupAccounts = []; // Untuk menyimpan account dalam group saat ini
 
         foreach ($accounts as $account) {
             $balances = $getMonthlyBalance($account->account_no, $year, $currentMonth);
             
-            // Skip jika tidak ada data
-            if (array_sum($balances) == 0) {
-                continue;
+            // Cek apakah ada nilai di minimal satu bulan
+            $hasValue = false;
+            foreach ($balances as $balance) {
+                if ($balance != 0) {
+                    $hasValue = true;
+                    break;
+                }
             }
 
-            // Tambahkan group header jika berganti group
+            // Jika berganti group, proses group sebelumnya
             if ($account->general_account != $currentGroup) {
+                // Jika group sebelumnya memiliki account dengan nilai, tambahkan ke result
+                if (!empty($groupAccounts)) {
+                    // Tambahkan group header
+                    $generalAccount = DB::table('tb_account_list')
+                        ->where('account_no', $currentGroup)
+                        ->first();
+                    
+                    $result[] = [
+                        'account_no' => $currentGroup,
+                        'account_name' => $generalAccount->account_name ?? $currentGroup,
+                        'is_group' => true,
+                        'balances' => array_map($formatNumber, array_fill(1, $currentMonth, 0))
+                    ];
+                    
+                    // Tambahkan semua account dalam group
+                    $result = array_merge($result, $groupAccounts);
+                }
+                
+                // Reset untuk group baru
                 $currentGroup = $account->general_account;
-                
-                $generalAccount = DB::table('tb_account_list')
-                    ->where('account_no', $currentGroup)
-                    ->first();
-                
-                $result[] = [
-                    'account_no' => $currentGroup,
-                    'account_name' => $generalAccount->account_name ?? $currentGroup,
-                    'is_group' => true,
-                    'balances' => array_map($formatNumber, array_fill(1, $currentMonth, 0))
+                $groupAccounts = [];
+            }
+
+            // Tambahkan account jika memiliki nilai di minimal satu bulan
+            if ($hasValue) {
+                $groupAccounts[] = [
+                    'account_no' => $account->account_no,
+                    'account_name' => $account->account_name,
+                    'is_group' => false,
+                    'group_name' => $currentGroup,
+                    'balances' => array_map($formatNumber, $balances)
                 ];
             }
+        }
 
-            // Tambahkan detail akun
+        // Proses group terakhir
+        if (!empty($groupAccounts)) {
+            $generalAccount = DB::table('tb_account_list')
+                ->where('account_no', $currentGroup)
+                ->first();
+            
             $result[] = [
-                'account_no' => $account->account_no,
-                'account_name' => $account->account_name,
-                'is_group' => false,
-                'group_name' => $currentGroup,
-                'balances' => array_map($formatNumber, $balances)
+                'account_no' => $currentGroup,
+                'account_name' => $generalAccount->account_name ?? $currentGroup,
+                'is_group' => true,
+                'balances' => array_map($formatNumber, array_fill(1, $currentMonth, 0))
             ];
+            
+            $result = array_merge($result, $groupAccounts);
         }
 
         return $result;

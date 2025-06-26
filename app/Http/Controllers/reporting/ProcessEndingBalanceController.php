@@ -409,13 +409,16 @@ class ProcessEndingBalanceController extends Controller
 
                 // Prepare data for insertion into temp_tb_ending_balance
                 // *** MODIFICATION START ***
-                if (is_numeric($account['general_account'])) { // Check if general_account is numeric
+                if (is_numeric($account['general_account'])) {
+                    $isSpecialAccount = str_starts_with($account['account_no'], '16') || 
+                        str_starts_with($account['account_no'], '3201');
+    
                     $insertData[] = [
                         'code_periode' => $code_period,
                         'general_account' => $account['general_account'],
                         'account_no' => $account['account_no'],
                         'code_cost' => $account['code_cost'],
-                        'nominal' => $account['ending_balance'],
+                        'nominal' => $isSpecialAccount ? -abs($account['ending_balance']) : $account['ending_balance'],
                         'posisi' => $account['ebs'],
                     ];
                 }
