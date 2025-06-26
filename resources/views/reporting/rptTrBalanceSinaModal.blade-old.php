@@ -47,11 +47,8 @@
             <td style="font-size: 8; text-align: right; font-weight: bold;border-bottom: 1px solid black">D/C</td>
         </tr>
 
-        @php
-            $prevAccountNo = null;
-        @endphp
-
         @foreach ($reportData as $account)                
+                
             @if (isset($account['is_general_account']) && $account['is_general_account'])
                 <tr>
                     <td colspan="8">&nbsp;</td>
@@ -62,39 +59,27 @@
                 <tr>
                     <td colspan="8">&nbsp;</td>
                 </tr>
-                @php $prevAccountNo = null; @endphp
             @elseif (isset($account['is_subtotal']) && $account['is_subtotal'])
                 <tr class="font-weight-bold bg-light">
                     <td colspan="2" style="font-size: 8;">Subtotal General {{ $account['general_account'] }}</td>
-                    <td style="font-size: 8; text-align: right;">{{ number_format(abs($account['subtotal']['beginning_balance']), 2, ',', '.') }}</td>
+                    <td style="font-size: 8; text-align: right;">{{ number_format($account['subtotal']['beginning_balance'], 2, ',', '.') }}</td>
                     <td style="font-size: 8; text-align: right;"></td>
-                    <td style="font-size: 8; text-align: right;">{{ number_format(abs($account['subtotal']['debit']), 2, ',', '.') }}</td>
-                    <td style="font-size: 8; text-align: right;">{{ number_format(abs($account['subtotal']['credit']), 2, ',', '.') }}</td>
-                    <td style="font-size: 8; text-align: right;">{{ number_format(abs($account['subtotal']['ending_balance']), 2, ',', '.') }}</td>
+                    <td style="font-size: 8; text-align: right;">{{ number_format($account['subtotal']['debit'], 2, ',', '.') }}</td>
+                    <td style="font-size: 8; text-align: right;">{{ number_format($account['subtotal']['credit'], 2, ',', '.') }}</td>
+                    <td style="font-size: 8; text-align: right;">{{ number_format($account['subtotal']['ending_balance'], 2, ',', '.') }}</td>
                     <td style="font-size: 8; text-align: right;"></td>
                 </tr>
             @else
                 <tr>
-                    <td>
-                        @if($account['account_no'] != $prevAccountNo)
-                            {{ $account['account_no'] }}
-                        @endif
-                    </td>
-                    <td>
-                        @if(!empty($account['code_cost']))
-                            {{ $account['code_cost'] }} - {{ $account['cost_center_name'] }}
-                        @elseif($account['account_no'] != $prevAccountNo)
-                            {!! $account['account_name'] !!}
-                        @endif
-                    </td>
-                    <td style="font-size: 8; text-align: right;">{{ number_format(abs($account['beginning_balance']), 2, ',', '.') }}</td>
+                    <td>{{ $account['account_no'] }}</td>
+                    <td>{{ $account['account_name'] }}</td>
+                    <td style="font-size: 8; text-align: right;">{{ number_format($account['beginning_balance'], 2, ',', '.') }}</td>
                     <td style="font-size: 8; text-align: right;">{{ $account['dc1'] }}</td>
-                    <td style="font-size: 8; text-align: right;">{{ number_format(abs($account['debit']), 2, ',', '.') }}</td>
-                    <td style="font-size: 8; text-align: right;">{{ number_format(abs($account['credit']), 2, ',', '.') }}</td>
-                    <td style="font-size: 8; text-align: right;">{{ number_format(abs($account['ending_balance']), 2, ',', '.') }}</td>
+                    <td style="font-size: 8; text-align: right;">{{ number_format($account['debit'], 2, ',', '.') }}</td>
+                    <td style="font-size: 8; text-align: right;">{{ number_format($account['credit'], 2, ',', '.') }}</td>
+                    <td style="font-size: 8; text-align: right;">{{ number_format($account['ending_balance'], 2, ',', '.') }}</td>
                     <td style="font-size: 8; text-align: right;">{{ $account['dc2'] }}</td>
                 </tr>
-                @php $prevAccountNo = $account['account_no']; @endphp
             @endif
         @endforeach
         <tr>
@@ -102,22 +87,23 @@
             <td><strong>CURRENT MONTH PROFIT/LOSS</strong></td>
             <td></td>
             <td></td>
-            <td style="font-size: 8; text-align: right;">{{ number_format(abs($currProfitLosskredit['debit']), 2, ',', '.') }}</td>
-            <td style="font-size: 8; text-align: right;">{{ number_format(abs($currProfitLosskredit['kredit']), 2, ',', '.') }}</td>
+            <td style="font-size: 8; text-align: right;">{{ number_format($currProfitLosskredit['debit'], 2, ',', '.') }}</td>
+            <td style="font-size: 8; text-align: right;">{{ number_format($currProfitLosskredit['kredit'], 2, ',', '.') }}</td>
             <td></td>
             <td></td>
         </tr>
         <tr>
-            <td colspan="8">&nbsp;</td>
+            <td colspan="7">&nbsp;</td>
         </tr>
         <tr class="font-weight-bold">
             <td colspan="2" style="font-size: 8; text-align: center; border-top: 1px solid black;"><strong>T o t a l :</strong></td>
-            <td style="font-size: 8; text-align: right; border-top: 1px solid black;"><strong>{{ number_format(abs($total['beginning_balance']), 2, ',', '.') }}</strong></td>
+            <td style="font-size: 8; text-align: right; border-top: 1px solid black;"><strong>{{ number_format($total['beginning_balance'], 2, ',', '.') }}</strong></td>
             <td style="font-size: 8; text-align: right; border-top: 1px solid black;"></td>
-            <td style="font-size: 8; text-align: right; border-top: 1px solid black;"><strong>{{ number_format(abs($total['debit']), 2, ',', '.') }}</strong></td>
-            <td style="font-size: 8; text-align: right; border-top: 1px solid black;"><strong>{{ number_format(abs($total['credit']), 2, ',', '.') }}</strong></td>
-            <td style="font-size: 8; text-align: right; border-top: 1px solid black;"><strong>{{ number_format(abs($total['ending_balance']), 2, ',', '.') }}</strong></td>
+            <td style="font-size: 8; text-align: right; border-top: 1px solid black;"><strong>{{ number_format($total['debit'], 2, ',', '.') }}</strong></td>
+            <td style="font-size: 8; text-align: right; border-top: 1px solid black;"><strong>{{ number_format($total['credit'], 2, ',', '.') }}</strong></td>
+            <td style="font-size: 8; text-align: right; border-top: 1px solid black;"><strong>{{ number_format($total['ending_balance'], 2, ',', '.') }}</strong></td>
             <td style="font-size: 8; text-align: right; border-top: 1px solid black;"></td>
         </tr>
     </tbody>
 </table>
+

@@ -88,7 +88,40 @@ class RptTrBalanceSinaController extends Controller
 
         $code_period = $getPeriode->code_period;
 
-        // Ambil data journal details (transaksi bulan berjalan)
+        // Ambil semua akun dalam rentang yang diminta
+        $allAccountList = DB::table('tb_account_list')
+            ->whereBetween('account_no', [$acc_no, $acc_no_end])
+            ->select('account_no', 'general_account', 'account_name')
+            ->orderBy('account_no')
+            ->get()
+            ->keyBy('account_no');
+
+        // Validasi jika ada account yang tidak ditemukan
+        $missingAccounts = [];
+        $start = (float) str_replace('.', '', $acc_no);
+        $end = (float) str_replace('.', '', $acc_no_end);
+        
+        for ($i = $start; $i <= $end; $i++) {
+            $accountNo = substr($i, 0, 4) . '.' . substr($i, 4, 4);
+            if (!isset($allAccountList[$accountNo])) {
+                $missingAccounts[] = $accountNo;
+            }
+        }
+
+        // Ambil semua general account yang terlibat
+        $generalAccounts = DB::table('tb_account_list')
+            ->whereIn('account_no', function($query) use ($acc_no, $acc_no_end) {
+                $query->select('general_account')
+                    ->from('tb_account_list')
+                    ->whereBetween('account_no', [$acc_no, $acc_no_end]);
+            })
+            ->orWhereBetween('account_no', [$acc_no, $acc_no_end])
+            ->select('account_no', 'account_name')
+            ->orderBy('account_no')
+            ->get()
+            ->keyBy('account_no');
+
+        // Ambil data journal details
         $journalDetails = DB::table('tb_journal_detail as jd')
             ->join('tb_journal_header as jh', 'jd.journal_head_id', '=', 'jh.id_journal_head')
             ->join('tb_account_list as acc', 'jd.account_no', '=', 'acc.account_no')
@@ -96,6 +129,7 @@ class RptTrBalanceSinaController extends Controller
                 'acc.general_account',
                 'jd.account_no',
                 'acc.account_name',
+                'jd.code_cost',
                 DB::raw('SUM(jd.debit) as debit'),
                 DB::raw('SUM(jd.kredit) as kredit')
             )
@@ -104,101 +138,276 @@ class RptTrBalanceSinaController extends Controller
             ->when($code_div != "0", function ($query) use ($code_div) {
                 return $query->where('jd.code_div', $code_div);
             })
-            ->groupBy('acc.general_account', 'jd.account_no', 'acc.account_name')
+            ->groupBy('acc.general_account', 'jd.account_no', 'acc.account_name', 'jd.code_cost')
             ->orderBy('jd.account_no')
+            ->orderBy('jd.code_cost')
             ->get();
 
-        // Ambil saldo awal (beginning balance) dari bulan sebelumnya
+        // Kelompokkan journal details
+        $journalDetailsGrouped = [];
+        foreach ($journalDetails as $detail) {
+            $journalDetailsGrouped[$detail->account_no][$detail->code_cost] = $detail;
+        }
+
+        // Ambil saldo awal dari bulan sebelumnya
         $beginningBalances = DB::table('tb_journal_detail as jd')
             ->join('tb_account_list as acc', 'jd.account_no', '=', 'acc.account_no')
             ->select(
                 'jd.account_no',
-                DB::raw("SUM(
+                'jd.code_cost',
+                DB::raw("SUM(COALESCE(jd.debit, 0)) - SUM(COALESCE(jd.kredit, 0)) AS beginning_balance"),
+                DB::raw("
                     CASE
-                        WHEN COALESCE(jd.debit, 0) = 0 THEN COALESCE(jd.kredit, 0)
-                        ELSE COALESCE(jd.debit, 0) - COALESCE(jd.kredit, 0)
-                    END
-                ) as beginning_balance"),
-                DB::raw("MAX(
-                    CASE
-                        WHEN COALESCE(jd.debit, 0) = 0 THEN 'C'
-                        ELSE 'D'
-                    END
-                ) as d_c")
+                        WHEN SUM(COALESCE(jd.debit, 0)) - SUM(COALESCE(jd.kredit, 0)) >= 0 THEN 'D'
+                        ELSE 'C'
+                    END AS d_c
+                ")
             )
             ->where('jd.code_period', '<', $code_period)
             ->whereBetween('jd.account_no', [$acc_no, $acc_no_end])
             ->when($code_div != "0", function ($query) use ($code_div) {
                 return $query->where('jd.code_div', $code_div);
             })
-            ->groupBy('jd.account_no')
-            ->havingRaw("SUM(
-                CASE
-                    WHEN COALESCE(jd.debit, 0) = 0 THEN COALESCE(jd.kredit, 0)
-                    ELSE COALESCE(jd.debit, 0) - COALESCE(jd.kredit, 0)
-                END
-            ) <> 0")
-            ->get()
-            ->keyBy('account_no');
-
-        // Gabungkan data dari $journalDetails dan $beginningBalances
-        $allAccounts = collect();
-
-        // Tambahkan data dari $journalDetails
-        foreach ($journalDetails as $detail) {
-            $allAccounts->push([
-                'general_account' => $detail->general_account,
-                'account_no' => $detail->account_no,
-                'account_name' => $detail->account_name,
-                'debit' => (float) $detail->debit,
-                'kredit' => (float) $detail->kredit,
-            ]);
-        }
-
-        // Ambil semua account_no dari $beginningBalances yang belum ada di $journalDetails
-        $missingAccountNos = $beginningBalances->keys()->diff($allAccounts->pluck('account_no'));
-
-        // Ambil general_account dan account_name dari database untuk account_no yang belum ada di $journalDetails
-        $missingAccounts = DB::table('tb_account_list')
-            ->whereIn('account_no', $missingAccountNos)
-            ->select('account_no', 'general_account', 'account_name')
+            ->groupBy('jd.account_no', 'jd.code_cost')
+            ->orderBy('jd.account_no')
+            ->orderBy('jd.code_cost')
             ->get();
 
-        // Tambahkan data dari $beginningBalances yang belum ada di $journalDetails
-        foreach ($missingAccounts as $account) {
-            $allAccounts->push([
-                'general_account' => $account->general_account, // Ambil general_account dari database
-                'account_no' => $account->account_no,
-                'account_name' => $account->account_name, // Ambil account_name dari database
-                'debit' => 0, // Tidak ada transaksi pada bulan berjalan
-                'kredit' => 0, // Tidak ada transaksi pada bulan berjalan
-            ]);
+
+        // Kelompokkan beginning balances
+        $beginningBalancesGrouped = [];
+        foreach ($beginningBalances as $balance) {
+            $beginningBalancesGrouped[$balance->account_no][$balance->code_cost] = $balance;
         }
 
-        // Proses data yang sudah digabungkan
-        $groupedData = [];
-        foreach ($allAccounts as $detail) {
-            $generalAccount = $detail['general_account'];
-            $accountNo = $detail['account_no'];
+        // Gabungkan semua data
+        $combinedData = [];
+        $costCenters = [];
+        
+        foreach ($allAccountList as $accountNo => $account) {
+            $hasJournalDetails = isset($journalDetailsGrouped[$accountNo]);
+            $hasBeginningBalances = isset($beginningBalancesGrouped[$accountNo]);
+            
+            if (!$hasJournalDetails && !$hasBeginningBalances) {
+                continue;
+            }
+            
+            $accountCostCenters = [];
+            
+            if ($hasJournalDetails) {
+                $accountCostCenters = array_merge($accountCostCenters, array_keys($journalDetailsGrouped[$accountNo]));
+            }
+            
+            if ($hasBeginningBalances) {
+                $accountCostCenters = array_merge($accountCostCenters, array_keys($beginningBalancesGrouped[$accountNo]));
+            }
+            
+            $accountCostCenters = array_unique($accountCostCenters);
+            $costCenters = array_merge($costCenters, $accountCostCenters);
+            
+            if (empty($accountCostCenters)) {
+                $accountCostCenters = [null];
+            }
+            
+            foreach ($accountCostCenters as $codeCost) {
+                $journalDetail = $hasJournalDetails && isset($journalDetailsGrouped[$accountNo][$codeCost]) 
+                    ? $journalDetailsGrouped[$accountNo][$codeCost] 
+                    : null;
+                    
+                $beginningBalance = $hasBeginningBalances && isset($beginningBalancesGrouped[$accountNo][$codeCost]) 
+                    ? $beginningBalancesGrouped[$accountNo][$codeCost] 
+                    : null;
+                
+                $debit = $journalDetail ? (float) $journalDetail->debit : 0;
+                $credit = $journalDetail ? (float) $journalDetail->kredit : 0;
+                
+                $beginBalance = $beginningBalance ? $beginningBalance->beginning_balance : 0;
 
-            // Ambil saldo awal untuk account_no tertentu
-            $beginningBalanceData = $beginningBalances->get($accountNo);
-            $beginningBalance = $beginningBalanceData ? $beginningBalanceData->beginning_balance : 0;
-            $d_c = $beginningBalanceData ? $beginningBalanceData->d_c : 'D';
+                $firstAccountNo = (int) substr((string) $accountNo, 0, 1);
+                if($firstAccountNo == '2'){
+                    // $d_c = $beginningBalance ? $beginningBalance->d_c : 'C';
+                    $d_c = $beginBalance < 0 ? 'C' : 'D';
+                }else{
+                    $d_c = $beginningBalance ? $beginningBalance->d_c : 'D';
+                }
+                
+                // Handle khusus untuk akun 3202.0001 dan 3201.0001
+                if ($accountNo == '3202.0001') {
+                    $balance3202 = $beginBalance;
+                    $beginBalance = 0;
+                } elseif ($accountNo == '3201.0001') {
+                    $balance3202 = ($beginningBalancesGrouped['3202.0001'][$codeCost] ?? null) 
+                        ? $beginningBalancesGrouped['3202.0001'][$codeCost]->beginning_balance 
+                        : 0;
+                    $beginBalance += $balance3202;
+                }
+                                
 
-            $debit = (float) $detail['debit'];
-            $credit = (float) $detail['kredit'];
+                if ($d_c == 'C') {
+                    
+                    if($firstAccountNo == '2'){
+                        $endingBalance = abs($beginBalance) + $credit - $debit;
+                        $end_dc = abs($endingBalance) <= 0 ? 'D' : 'C';
+                    }else{
+                        $endingBalance = abs($beginBalance) + $credit - $debit;
+                        $end_dc = abs($endingBalance) >= 0 ? 'C' : 'D';
+                    }
+                    
+                } else {
+                    $endingBalance = abs($beginBalance) + $debit - $credit;
+                    
+                    if($firstAccountNo == '2'){
+                        $end_dc = abs($endingBalance) <= 0 ? 'D' : 'C';
+                    }else{
+                        $end_dc = $endingBalance >= 0 ? 'D' : 'C';
+                    }
+                }
+                
+                if ($beginBalance != 0 || $debit != 0 || $credit != 0 || $endingBalance != 0) {
+                    $key = $accountNo . ($codeCost ? '|' . $codeCost : '');
+                    
+                    $combinedData[$key] = [
+                        'general_account' => $account->general_account,
+                        'account_no' => $accountNo,
+                        'account_name' => $account->account_name,
+                        'code_cost' => $codeCost,
+                        'beginning_balance' => $beginBalance,
+                        'bbs' => $d_c,
+                        'debit' => $debit,
+                        'credit' => $credit,
+                        'ending_balance' => $endingBalance,
+                        'ebs' => $end_dc,
+                    ];
+                }
+            }
+        }
+        
+        // Hitung laba rugi
+        $totalKredit = collect($combinedData)
+            ->filter(function ($item) {
+                return str_starts_with($item['general_account'], '4') ||
+                       str_starts_with($item['general_account'], '5') ||
+                       str_starts_with($item['general_account'], '6') ||
+                       str_starts_with($item['general_account'], '7') ||
+                       str_starts_with($item['general_account'], '8') ||
+                       str_starts_with($item['general_account'], '9');
+            })
+            ->sum('credit');
 
-            // Hitung saldo akhir
-            if ($d_c === 'C') {
-                $endingBalance = $beginningBalance + $credit - $debit;
-                $end_dc = $endingBalance >= 0 ? 'C' : 'D';
+        $totalDebit = collect($combinedData)
+            ->filter(function ($item) {
+                return str_starts_with($item['general_account'], '4') ||
+                       str_starts_with($item['general_account'], '5') ||
+                       str_starts_with($item['general_account'], '6') ||
+                       str_starts_with($item['general_account'], '7') ||
+                       str_starts_with($item['general_account'], '8') ||
+                       str_starts_with($item['general_account'], '9');
+            })
+            ->sum('debit');
+
+        $currentProfitLosskredit = $totalKredit - $totalDebit;
+        $currentProfitLossValue = abs($currentProfitLosskredit);
+
+        $previousProfitLossData = DB::table('tb_journal_detail as jd')
+            ->join('tb_account_list as acc', 'jd.account_no', '=', 'acc.account_no')
+            ->select(
+                DB::raw("SUM(COALESCE(jd.kredit, 0)) - SUM(COALESCE(jd.debit, 0)) as profit_loss")
+            )
+            ->where('jd.code_period', '<', $code_period)
+            ->where(function ($query) {
+                $query->where('jd.account_no', 'like', '4%')
+                      ->orWhere('jd.account_no', 'like', '5%')
+                      ->orWhere('jd.account_no', 'like', '6%')
+                      ->orWhere('jd.account_no', 'like', '7%')
+                      ->orWhere('jd.account_no', 'like', '8%')
+                      ->orWhere('jd.account_no', 'like', '9%');
+            })
+            ->when($code_div != "0", function ($query) use ($code_div) {
+                return $query->where('jd.code_div', $code_div);
+            })
+            ->first();
+
+        $previousProfitLoss = $previousProfitLossData ? $previousProfitLossData->profit_loss : 0;
+
+        // Tambahkan akun 3202.0001 secara manual jika ada nilai laba rugi
+        if ($currentProfitLossValue != 0 && isset($allAccountList['3202.0001'])) {
+            $key = '3202.0001';
+            
+            // if ($currentProfitLosskredit > 0) {
+            //     $endingBalance3202 = $currentProfitLossValue;
+            //     $end_dc3202 = 'C';
+            //     $debit3202 = 0;
+            //     $credit3202 = $endingBalance3202;
+            // } else {
+            //     $endingBalance3202 = $previousProfitLoss-$currentProfitLossValue;
+            //     $end_dc3202 = 'D';
+            //     $debit3202 = $currentProfitLossValue;
+            //     $credit3202 = 0;
+            // }
+
+            if ($currentProfitLosskredit > 0) {
+                $endingBalance3202 = $previousProfitLoss+$currentProfitLossValue;
+                $end_dc3202 = 'D';
+                $debit3202 = 0;
+                $credit3202 = $currentProfitLossValue;
             } else {
-                $endingBalance = $beginningBalance + $debit - $credit;
-                $end_dc = $endingBalance >= 0 ? 'D' : 'C';
+                $endingBalance3202 = $previousProfitLoss-$currentProfitLossValue;
+                $end_dc3202 = 'D';
+                $debit3202 = $currentProfitLossValue;
+                $credit3202 = 0;
             }
 
-            // Kelompokkan data berdasarkan general_account
+            // $end_dc3202 = $endingBalance3202 >= 0 ? 'D' : 'C';
+            
+            $combinedData[$key] = [
+                'general_account' => $allAccountList['3202.0001']->general_account,
+                'account_no' => '3202.0001',
+                'account_name' => $allAccountList['3202.0001']->account_name,
+                'code_cost' => null,
+                'beginning_balance' => $previousProfitLoss,
+                'bbs' => 'D',
+                'debit' => $debit3202,
+                'credit' => $credit3202,
+                'ending_balance' => $endingBalance3202,
+                'ebs' => $end_dc3202,
+            ];
+            
+            if (!in_array(null, $costCenters)) {
+                $costCenters[] = null;
+            }
+        }
+
+        // Ambil informasi cost center
+        $costCenters = array_unique($costCenters);
+        $costCenterNames = [];
+        
+        if (!empty($costCenters)) {
+            $costCenterData = DB::table('tb_cost')
+                ->whereIn('code_cost', $costCenters)
+                ->select('code_cost', 'cost_description')
+                ->get();
+                
+            foreach ($costCenterData as $cost) {
+                $costCenterNames[$cost->code_cost] = $cost->cost_description;
+            }
+        }
+
+        // Kelompokkan data berdasarkan general_account
+        $groupedData = [];
+        
+        uksort($combinedData, function($a, $b) {
+            list($aAcc, $aCost) = array_pad(explode('|', $a), 2, null);
+            list($bAcc, $bCost) = array_pad(explode('|', $b), 2, null);
+            
+            if ($aAcc == $bAcc) {
+                return strcmp($aCost ?? '', $bCost ?? '');
+            }
+            return strcmp($aAcc, $bAcc);
+        });
+        
+        foreach ($combinedData as $account) {
+            $generalAccount = $account['general_account'];
+            
             if (!isset($groupedData[$generalAccount])) {
                 $groupedData[$generalAccount] = [
                     'subtotal' => [
@@ -210,24 +419,20 @@ class RptTrBalanceSinaController extends Controller
                     'details' => []
                 ];
             }
-
-            // Tambahkan detail untuk account_no
-            $groupedData[$generalAccount]['details'][$accountNo] = [
-                'account_name' => $detail['account_name'],
-                'beginning_balance' => $beginningBalance,
-                'bbs' => $d_c,
-                'debit' => $debit,
-                'credit' => $credit,
-                'ending_balance' => $endingBalance,
-                'ebs' => $end_dc,
-            ];
-
-            // Hitung subtotal untuk general_account
-            $groupedData[$generalAccount]['subtotal']['beginning_balance'] += $beginningBalance;
-            $groupedData[$generalAccount]['subtotal']['debit'] += $debit;
-            $groupedData[$generalAccount]['subtotal']['credit'] += $credit;
-            $groupedData[$generalAccount]['subtotal']['ending_balance'] += $endingBalance;
+            
+            $groupedData[$generalAccount]['details'][] = $account;
+            
+            $groupedData[$generalAccount]['subtotal']['beginning_balance'] += $account['beginning_balance'];
+            $groupedData[$generalAccount]['subtotal']['debit'] += $account['debit'];
+            $groupedData[$generalAccount]['subtotal']['credit'] += $account['credit'];
+            $groupedData[$generalAccount]['subtotal']['ending_balance'] += $account['ending_balance'];
         }
+
+        $groupedData = array_filter($groupedData, function($group) {
+            return !empty($group['details']);
+        });
+
+        ksort($groupedData);
 
         // Siapkan data untuk ditampilkan
         $reportData = [];
@@ -239,17 +444,19 @@ class RptTrBalanceSinaController extends Controller
         ];
 
         foreach ($groupedData as $generalAccount => $group) {
-            $getAccName = AccountListSinaModel::select('account_name')
-                ->where('account_no', $generalAccount)
-                ->first();
-            $getAccName_x = $generalAccount . " - " . $getAccName->account_name;
+            $generalAccountName = isset($generalAccounts[$generalAccount])
+                ? $generalAccount . " - " . $generalAccounts[$generalAccount]->account_name
+                : (isset($allAccountList[$generalAccount])
+                    ? $generalAccount . " - " . $allAccountList[$generalAccount]->account_name
+                    : $generalAccount . " - Unknown Account");
 
-            // Tambahkan header general account
             $reportData[] = [
                 'is_general_account' => true,
-                'general_account' => $getAccName_x,
+                'general_account' => $generalAccountName,
                 'account_no' => '',
                 'account_name' => '',
+                'code_cost' => '',
+                'cost_center_name' => '',
                 'beginning_balance' => '',
                 'dc1' => '',
                 'debit' => '',
@@ -258,11 +465,16 @@ class RptTrBalanceSinaController extends Controller
                 'dc2' => '',
             ];
 
-            // Tambahkan detail per account_no
-            foreach ($group['details'] as $accountNo => $account) {
+            foreach ($group['details'] as $account) {
+                $costCenterName = $account['code_cost'] 
+                    ? ($costCenterNames[$account['code_cost']] ?? $account['code_cost'])
+                    : '';
+                    
                 $reportData[] = [
-                    'account_no' => $accountNo,
+                    'account_no' => $account['account_no'],
                     'account_name' => $account['account_name'],
+                    'code_cost' => $account['code_cost'],
+                    'cost_center_name' => $costCenterName,
                     'beginning_balance' => $account['beginning_balance'],
                     'dc1' => $account['bbs'],
                     'debit' => $account['debit'],
@@ -272,67 +484,91 @@ class RptTrBalanceSinaController extends Controller
                 ];
             }
 
-            // Tambahkan subtotal untuk general_account
+            // Untuk perhitungan Subtotal
+            $firstGenAcc = (int) substr((string) $generalAccount, 0, 1);
+            $firstTwoDigits = (int) substr((string) $generalAccount, 0, 2);
+            $balance = $group['subtotal']['beginning_balance'] ?? null;
+
+            if ($firstTwoDigits == "16") {
+                $dc_sub = 'C';
+            } elseif ($firstGenAcc == "2") {                
+                $dc_sub = is_null($balance) || $balance < 0 ? 'C' : 'D';
+            } elseif ($firstTwoDigits == "31") {
+                $dc_sub = 'C';
+            } elseif ($firstTwoDigits == "32") {
+                $dc_sub = 'D';            
+            } else {
+                $dc_sub = $group['subtotal']['beginning_balance'] < 0 ? 'C' : 'D';
+            }
+
+            if ($dc_sub == 'C') {                    
+                if($firstGenAcc == '2'){
+                    $endBalanceSub = abs($group['subtotal']['beginning_balance']) + $group['subtotal']['credit'] - $group['subtotal']['debit'];
+                    $end_dc_sub = abs($group['subtotal']['beginning_balance']) <= 0 ? 'D' : 'C';
+                }else{
+                    $endBalanceSub = abs($group['subtotal']['beginning_balance']) + $group['subtotal']['credit'] - $group['subtotal']['debit'];
+                    $end_dc_sub = abs($group['subtotal']['beginning_balance']) >= 0 ? 'C' : 'D';
+                }                
+            } else {
+                $endBalanceSub = abs($group['subtotal']['beginning_balance']) + $group['subtotal']['debit'] - $group['subtotal']['credit'];
+                
+                if($firstGenAcc == '2'){
+                    $end_dc_sub = abs($endBalanceSub) <= 0 ? 'D' : 'C';
+                }else{
+                    $end_dc_sub = $endBalanceSub >= 0 ? 'D' : 'C';
+                }
+            }            
+
             $reportData[] = [
                 'account_no' => '',
-                'account_name' => 'Subtotal :',
+                'account_name' => '<strong>Subtotal :</strong>',
+                'code_cost' => '',
+                'cost_center_name' => '',
                 'beginning_balance' => $group['subtotal']['beginning_balance'],
-                'dc1' => '',
+                'dc1' => $dc_sub,
                 'debit' => $group['subtotal']['debit'],
                 'credit' => $group['subtotal']['credit'],
-                'ending_balance' => $group['subtotal']['ending_balance'],
-                'dc2' => '',
+                'ending_balance' => $endBalanceSub,
+                'dc2' => $end_dc_sub,
             ];
 
-            // Hitung total keseluruhan
             $total['beginning_balance'] += $group['subtotal']['beginning_balance'];
             $total['debit'] += $group['subtotal']['debit'];
             $total['credit'] += $group['subtotal']['credit'];
-            $total['ending_balance'] += $group['subtotal']['ending_balance'];
+            // $total['ending_balance'] += $group['subtotal']['ending_balance'];
         }
 
-        $totalkredit = $journalDetails->where(function ($item) {
-            return str_starts_with($item->general_account, '4') || str_starts_with($item->general_account, '81');
-        })->sum('kredit');
-
-        $totalDebit = $journalDetails->where(function ($item) {
-            return str_starts_with($item->general_account, '5') ||
-                   str_starts_with($item->general_account, '6') ||
-                   str_starts_with($item->general_account, '7') ||
-                   str_starts_with($item->general_account, '82') ||
-                   str_starts_with($item->general_account, '89') ||
-                   str_starts_with($item->general_account, '9');
-        })->sum('debit');
-
-        // Hitung currentProfitLosskredit
-        $currentProfitLosskredit = $totalkredit - $totalDebit;
-
-        // Tambahkan hasil ke data
-        if ($totalkredit > $totalDebit) {
-            // Jika totalkredit lebih besar, tampilkan di kolom debit
-            $data['currProfitLosskredit'] = [
-                'general_account' => 'CurrentProfitLoss',
-                'general_name' => 'Current Month Profit/Loss',
-                'beginning_balance' => 0,
-                'debit' => $currentProfitLosskredit,
-                'kredit' => 0,
-                'ending_balance' => 0,
-                'ebs' => 'D',
-            ];
-        } else {
-            // Jika totalDebit lebih besar atau sama, tampilkan di kolom kredit
-            $data['currProfitLosskredit'] = [
-                'general_account' => 'CurrentProfitLoss',
-                'general_name' => 'Current Month Profit/Loss',
-                'beginning_balance' => 0,
-                'debit' => 0,
-                'kredit' => $currentProfitLosskredit,
-                'ending_balance' => 0,
-                'ebs' => 'C',
-            ];
+        // Tambahkan Current Profit/Loss ke data dan total
+        if ($currentProfitLosskredit != 0) {
+            if ($currentProfitLosskredit > 0) {
+                $total['debit'] += $currentProfitLossValue;
+                
+                $data['currProfitLosskredit'] = [
+                    'general_account' => 'CurrentProfitLoss',
+                    'general_name' => 'Current Month Profit/Loss',
+                    'beginning_balance' => 0,
+                    'debit' => $currentProfitLossValue,
+                    'kredit' => 0,
+                    'ending_balance' => 0,
+                    'ebs' => 'D',
+                ];
+            } else {
+                $total['credit'] += $currentProfitLossValue;
+                
+                $data['currProfitLosskredit'] = [
+                    'general_account' => 'CurrentProfitLoss',
+                    'general_name' => 'Current Month Profit/Loss',
+                    'beginning_balance' => 0,
+                    'debit' => 0,
+                    'kredit' => $currentProfitLossValue,
+                    'ending_balance' => 0,
+                    'ebs' => 'C',
+                ];
+            }
         }
 
-        // Siapkan data untuk view
+        // $total['beginning_balance'] = $previousProfitLoss;
+        $total['ending_balance'] = $total['beginning_balance'] + $total['debit'] - $total['credit'];
         $data['reportData'] = $reportData;
         $data['total'] = $total;
         $data['m_date'] = $m_date;
@@ -363,7 +599,40 @@ class RptTrBalanceSinaController extends Controller
 
         $code_period = $getPeriode->code_period;
 
-        // Ambil data journal details (transaksi bulan berjalan)
+        // Ambil semua akun dalam rentang yang diminta
+        $allAccountList = DB::table('tb_account_list')
+            ->whereBetween('account_no', [$acc_no, $acc_no_end])
+            ->select('account_no', 'general_account', 'account_name')
+            ->orderBy('account_no')
+            ->get()
+            ->keyBy('account_no');
+
+        // Validasi jika ada account yang tidak ditemukan
+        $missingAccounts = [];
+        $start = (float) str_replace('.', '', $acc_no);
+        $end = (float) str_replace('.', '', $acc_no_end);
+        
+        for ($i = $start; $i <= $end; $i++) {
+            $accountNo = substr($i, 0, 4) . '.' . substr($i, 4, 4);
+            if (!isset($allAccountList[$accountNo])) {
+                $missingAccounts[] = $accountNo;
+            }
+        }
+
+        // Ambil semua general account yang terlibat
+        $generalAccounts = DB::table('tb_account_list')
+            ->whereIn('account_no', function($query) use ($acc_no, $acc_no_end) {
+                $query->select('general_account')
+                    ->from('tb_account_list')
+                    ->whereBetween('account_no', [$acc_no, $acc_no_end]);
+            })
+            ->orWhereBetween('account_no', [$acc_no, $acc_no_end])
+            ->select('account_no', 'account_name')
+            ->orderBy('account_no')
+            ->get()
+            ->keyBy('account_no');
+
+        // Ambil data journal details
         $journalDetails = DB::table('tb_journal_detail as jd')
             ->join('tb_journal_header as jh', 'jd.journal_head_id', '=', 'jh.id_journal_head')
             ->join('tb_account_list as acc', 'jd.account_no', '=', 'acc.account_no')
@@ -371,6 +640,7 @@ class RptTrBalanceSinaController extends Controller
                 'acc.general_account',
                 'jd.account_no',
                 'acc.account_name',
+                'jd.code_cost',
                 DB::raw('SUM(jd.debit) as debit'),
                 DB::raw('SUM(jd.kredit) as kredit')
             )
@@ -379,101 +649,274 @@ class RptTrBalanceSinaController extends Controller
             ->when($code_div != "0", function ($query) use ($code_div) {
                 return $query->where('jd.code_div', $code_div);
             })
-            ->groupBy('acc.general_account', 'jd.account_no', 'acc.account_name')
+            ->groupBy('acc.general_account', 'jd.account_no', 'acc.account_name', 'jd.code_cost')
             ->orderBy('jd.account_no')
+            ->orderBy('jd.code_cost')
             ->get();
 
-        // Ambil saldo awal (beginning balance) dari bulan sebelumnya
+        // Kelompokkan journal details
+        $journalDetailsGrouped = [];
+        foreach ($journalDetails as $detail) {
+            $journalDetailsGrouped[$detail->account_no][$detail->code_cost] = $detail;
+        }
+
+        // Ambil saldo awal dari bulan sebelumnya
         $beginningBalances = DB::table('tb_journal_detail as jd')
             ->join('tb_account_list as acc', 'jd.account_no', '=', 'acc.account_no')
             ->select(
                 'jd.account_no',
-                DB::raw("SUM(
+                'jd.code_cost',
+                DB::raw("SUM(COALESCE(jd.debit, 0)) - SUM(COALESCE(jd.kredit, 0)) AS beginning_balance"),
+                DB::raw("
                     CASE
-                        WHEN COALESCE(jd.debit, 0) = 0 THEN COALESCE(jd.kredit, 0)
-                        ELSE COALESCE(jd.debit, 0) - COALESCE(jd.kredit, 0)
-                    END
-                ) as beginning_balance"),
-                DB::raw("MAX(
-                    CASE
-                        WHEN COALESCE(jd.debit, 0) = 0 THEN 'C'
-                        ELSE 'D'
-                    END
-                ) as d_c")
+                        WHEN SUM(COALESCE(jd.debit, 0)) - SUM(COALESCE(jd.kredit, 0)) >= 0 THEN 'D'
+                        ELSE 'C'
+                    END AS d_c
+                ")
             )
             ->where('jd.code_period', '<', $code_period)
             ->whereBetween('jd.account_no', [$acc_no, $acc_no_end])
             ->when($code_div != "0", function ($query) use ($code_div) {
                 return $query->where('jd.code_div', $code_div);
             })
-            ->groupBy('jd.account_no')
-            ->havingRaw("SUM(
-                CASE
-                    WHEN COALESCE(jd.debit, 0) = 0 THEN COALESCE(jd.kredit, 0)
-                    ELSE COALESCE(jd.debit, 0) - COALESCE(jd.kredit, 0)
-                END
-            ) <> 0")
-            ->get()
-            ->keyBy('account_no');
-
-        // Gabungkan data dari $journalDetails dan $beginningBalances
-        $allAccounts = collect();
-
-        // Tambahkan data dari $journalDetails
-        foreach ($journalDetails as $detail) {
-            $allAccounts->push([
-                'general_account' => $detail->general_account,
-                'account_no' => $detail->account_no,
-                'account_name' => $detail->account_name,
-                'debit' => (float) $detail->debit,
-                'kredit' => (float) $detail->kredit,
-            ]);
-        }
-
-        // Ambil semua account_no dari $beginningBalances yang belum ada di $journalDetails
-        $missingAccountNos = $beginningBalances->keys()->diff($allAccounts->pluck('account_no'));
-
-        // Ambil general_account dan account_name dari database untuk account_no yang belum ada di $journalDetails
-        $missingAccounts = DB::table('tb_account_list')
-            ->whereIn('account_no', $missingAccountNos)
-            ->select('account_no', 'general_account', 'account_name')
+            ->groupBy('jd.account_no', 'jd.code_cost')
+            ->orderBy('jd.account_no')
+            ->orderBy('jd.code_cost')
             ->get();
 
-        // Tambahkan data dari $beginningBalances yang belum ada di $journalDetails
-        foreach ($missingAccounts as $account) {
-            $allAccounts->push([
-                'general_account' => $account->general_account, // Ambil general_account dari database
-                'account_no' => $account->account_no,
-                'account_name' => $account->account_name, // Ambil account_name dari database
-                'debit' => 0, // Tidak ada transaksi pada bulan berjalan
-                'kredit' => 0, // Tidak ada transaksi pada bulan berjalan
-            ]);
+
+        // Kelompokkan beginning balances
+        $beginningBalancesGrouped = [];
+        foreach ($beginningBalances as $balance) {
+            $beginningBalancesGrouped[$balance->account_no][$balance->code_cost] = $balance;
         }
 
-        // Proses data yang sudah digabungkan
-        $groupedData = [];
-        foreach ($allAccounts as $detail) {
-            $generalAccount = $detail['general_account'];
-            $accountNo = $detail['account_no'];
-
-            // Ambil saldo awal untuk account_no tertentu
-            $beginningBalanceData = $beginningBalances->get($accountNo);
-            $beginningBalance = $beginningBalanceData ? $beginningBalanceData->beginning_balance : 0;
-            $d_c = $beginningBalanceData ? $beginningBalanceData->d_c : 'D';
-
-            $debit = (float) $detail['debit'];
-            $credit = (float) $detail['kredit'];
-
-            // Hitung saldo akhir
-            if ($d_c === 'C') {
-                $endingBalance = $beginningBalance + $credit - $debit;
-                $end_dc = $endingBalance >= 0 ? 'C' : 'D';
-            } else {
-                $endingBalance = $beginningBalance + $debit - $credit;
-                $end_dc = $endingBalance >= 0 ? 'D' : 'C';
+        // Gabungkan semua data
+        $combinedData = [];
+        $costCenters = [];
+        
+        foreach ($allAccountList as $accountNo => $account) {
+            $hasJournalDetails = isset($journalDetailsGrouped[$accountNo]);
+            $hasBeginningBalances = isset($beginningBalancesGrouped[$accountNo]);
+            
+            if (!$hasJournalDetails && !$hasBeginningBalances) {
+                continue;
             }
+            
+            $accountCostCenters = [];
+            
+            if ($hasJournalDetails) {
+                $accountCostCenters = array_merge($accountCostCenters, array_keys($journalDetailsGrouped[$accountNo]));
+            }
+            
+            if ($hasBeginningBalances) {
+                $accountCostCenters = array_merge($accountCostCenters, array_keys($beginningBalancesGrouped[$accountNo]));
+            }
+            
+            $accountCostCenters = array_unique($accountCostCenters);
+            $costCenters = array_merge($costCenters, $accountCostCenters);
+            
+            if (empty($accountCostCenters)) {
+                $accountCostCenters = [null];
+            }
+            
+            foreach ($accountCostCenters as $codeCost) {
+                $journalDetail = $hasJournalDetails && isset($journalDetailsGrouped[$accountNo][$codeCost]) 
+                    ? $journalDetailsGrouped[$accountNo][$codeCost] 
+                    : null;
+                    
+                $beginningBalance = $hasBeginningBalances && isset($beginningBalancesGrouped[$accountNo][$codeCost]) 
+                    ? $beginningBalancesGrouped[$accountNo][$codeCost] 
+                    : null;
+                
+                $debit = $journalDetail ? (float) $journalDetail->debit : 0;
+                $credit = $journalDetail ? (float) $journalDetail->kredit : 0;
+                
+                $beginBalance = $beginningBalance ? $beginningBalance->beginning_balance : 0;
 
-            // Kelompokkan data berdasarkan general_account
+                $firstAccountNo = (int) substr((string) $accountNo, 0, 1);
+                if($firstAccountNo == '2'){
+                    // $d_c = $beginningBalance ? $beginningBalance->d_c : 'C';
+                    $d_c = $beginBalance < 0 ? 'C' : 'D';
+                }else{
+                    $d_c = $beginningBalance ? $beginningBalance->d_c : 'D';
+                }
+                
+                // Handle khusus untuk akun 3202.0001 dan 3201.0001
+                if ($accountNo == '3202.0001') {
+                    $balance3202 = $beginBalance;
+                    $beginBalance = 0;
+                } elseif ($accountNo == '3201.0001') {
+                    $balance3202 = ($beginningBalancesGrouped['3202.0001'][$codeCost] ?? null) 
+                        ? $beginningBalancesGrouped['3202.0001'][$codeCost]->beginning_balance 
+                        : 0;
+                    $beginBalance += $balance3202;
+                }
+                                
+
+                if ($d_c == 'C') {
+                    
+                    if($firstAccountNo == '2'){
+                        $endingBalance = abs($beginBalance) + $credit - $debit;
+                        $end_dc = abs($endingBalance) <= 0 ? 'D' : 'C';
+                    }else{
+                        $endingBalance = abs($beginBalance) + $credit - $debit;
+                        $end_dc = abs($endingBalance) >= 0 ? 'C' : 'D';
+                    }
+                    
+                } else {
+                    $endingBalance = abs($beginBalance) + $debit - $credit;
+                    
+                    if($firstAccountNo == '2'){
+                        $end_dc = abs($endingBalance) <= 0 ? 'D' : 'C';
+                    }else{
+                        $end_dc = $endingBalance >= 0 ? 'D' : 'C';
+                    }
+                }
+                
+                if ($beginBalance != 0 || $debit != 0 || $credit != 0 || $endingBalance != 0) {
+                    $key = $accountNo . ($codeCost ? '|' . $codeCost : '');
+                    
+                    $combinedData[$key] = [
+                        'general_account' => $account->general_account,
+                        'account_no' => $accountNo,
+                        'account_name' => $account->account_name,
+                        'code_cost' => $codeCost,
+                        'beginning_balance' => $beginBalance,
+                        'bbs' => $d_c,
+                        'debit' => $debit,
+                        'credit' => $credit,
+                        'ending_balance' => $endingBalance,
+                        'ebs' => $end_dc,
+                    ];
+                }
+            }
+        }
+        
+        // Hitung laba rugi
+        $totalKredit = collect($combinedData)
+            ->filter(function ($item) {
+                return str_starts_with($item['general_account'], '4') ||
+                       str_starts_with($item['general_account'], '5') ||
+                       str_starts_with($item['general_account'], '6') ||
+                       str_starts_with($item['general_account'], '7') ||
+                       str_starts_with($item['general_account'], '8') ||
+                       str_starts_with($item['general_account'], '9');
+            })
+            ->sum('credit');
+
+        $totalDebit = collect($combinedData)
+            ->filter(function ($item) {
+                return str_starts_with($item['general_account'], '4') ||
+                       str_starts_with($item['general_account'], '5') ||
+                       str_starts_with($item['general_account'], '6') ||
+                       str_starts_with($item['general_account'], '7') ||
+                       str_starts_with($item['general_account'], '8') ||
+                       str_starts_with($item['general_account'], '9');
+            })
+            ->sum('debit');
+
+        $currentProfitLosskredit = $totalKredit - $totalDebit;
+        $currentProfitLossValue = abs($currentProfitLosskredit);
+
+        $previousProfitLossData = DB::table('tb_journal_detail as jd')
+            ->join('tb_account_list as acc', 'jd.account_no', '=', 'acc.account_no')
+            ->select(
+                DB::raw("SUM(COALESCE(jd.kredit, 0)) - SUM(COALESCE(jd.debit, 0)) as profit_loss")
+            )
+            ->where('jd.code_period', '<', $code_period)
+            ->where(function ($query) {
+                $query->where('jd.account_no', 'like', '4%')
+                      ->orWhere('jd.account_no', 'like', '5%')
+                      ->orWhere('jd.account_no', 'like', '6%')
+                      ->orWhere('jd.account_no', 'like', '7%')
+                      ->orWhere('jd.account_no', 'like', '8%')
+                      ->orWhere('jd.account_no', 'like', '9%');
+            })
+            ->when($code_div != "0", function ($query) use ($code_div) {
+                return $query->where('jd.code_div', $code_div);
+            })
+            ->first();
+
+        $previousProfitLoss = $previousProfitLossData ? $previousProfitLossData->profit_loss : 0;
+
+        // Tambahkan akun 3202.0001 secara manual jika ada nilai laba rugi
+        if ($currentProfitLossValue != 0 && isset($allAccountList['3202.0001'])) {
+            $key = '3202.0001';
+            
+            // if ($currentProfitLosskredit > 0) {
+            //     $endingBalance3202 = $currentProfitLossValue;
+            //     $end_dc3202 = 'C';
+            //     $debit3202 = 0;
+            //     $credit3202 = $endingBalance3202;
+            // } else {
+            //     $endingBalance3202 = $previousProfitLoss-$currentProfitLossValue;
+            //     $end_dc3202 = 'D';
+            //     $debit3202 = $currentProfitLossValue;
+            //     $credit3202 = 0;
+            // }
+
+            if ($currentProfitLosskredit > 0) {
+                $endingBalance3202 = $previousProfitLoss+$currentProfitLossValue;
+                $end_dc3202 = 'D';
+                $debit3202 = 0;
+                $credit3202 = $currentProfitLossValue;
+            } else {
+                $endingBalance3202 = $previousProfitLoss-$currentProfitLossValue;
+                $end_dc3202 = 'D';
+                $debit3202 = $currentProfitLossValue;
+                $credit3202 = 0;
+            }
+            
+            $combinedData[$key] = [
+                'general_account' => $allAccountList['3202.0001']->general_account,
+                'account_no' => '3202.0001',
+                'account_name' => $allAccountList['3202.0001']->account_name,
+                'code_cost' => null,
+                'beginning_balance' => $previousProfitLoss,
+                'bbs' => 'D',
+                'debit' => $debit3202,
+                'credit' => $credit3202,
+                'ending_balance' => $endingBalance3202,
+                'ebs' => $end_dc3202,
+            ];
+            
+            if (!in_array(null, $costCenters)) {
+                $costCenters[] = null;
+            }
+        }
+
+        // Ambil informasi cost center
+        $costCenters = array_unique($costCenters);
+        $costCenterNames = [];
+        
+        if (!empty($costCenters)) {
+            $costCenterData = DB::table('tb_cost')
+                ->whereIn('code_cost', $costCenters)
+                ->select('code_cost', 'cost_description')
+                ->get();
+                
+            foreach ($costCenterData as $cost) {
+                $costCenterNames[$cost->code_cost] = $cost->cost_description;
+            }
+        }
+
+        // Kelompokkan data berdasarkan general_account
+        $groupedData = [];
+        
+        uksort($combinedData, function($a, $b) {
+            list($aAcc, $aCost) = array_pad(explode('|', $a), 2, null);
+            list($bAcc, $bCost) = array_pad(explode('|', $b), 2, null);
+            
+            if ($aAcc == $bAcc) {
+                return strcmp($aCost ?? '', $bCost ?? '');
+            }
+            return strcmp($aAcc, $bAcc);
+        });
+        
+        foreach ($combinedData as $account) {
+            $generalAccount = $account['general_account'];
+            
             if (!isset($groupedData[$generalAccount])) {
                 $groupedData[$generalAccount] = [
                     'subtotal' => [
@@ -485,24 +928,20 @@ class RptTrBalanceSinaController extends Controller
                     'details' => []
                 ];
             }
-
-            // Tambahkan detail untuk account_no
-            $groupedData[$generalAccount]['details'][$accountNo] = [
-                'account_name' => $detail['account_name'],
-                'beginning_balance' => $beginningBalance,
-                'bbs' => $d_c,
-                'debit' => $debit,
-                'credit' => $credit,
-                'ending_balance' => $endingBalance,
-                'ebs' => $end_dc,
-            ];
-
-            // Hitung subtotal untuk general_account
-            $groupedData[$generalAccount]['subtotal']['beginning_balance'] += $beginningBalance;
-            $groupedData[$generalAccount]['subtotal']['debit'] += $debit;
-            $groupedData[$generalAccount]['subtotal']['credit'] += $credit;
-            $groupedData[$generalAccount]['subtotal']['ending_balance'] += $endingBalance;
+            
+            $groupedData[$generalAccount]['details'][] = $account;
+            
+            $groupedData[$generalAccount]['subtotal']['beginning_balance'] += $account['beginning_balance'];
+            $groupedData[$generalAccount]['subtotal']['debit'] += $account['debit'];
+            $groupedData[$generalAccount]['subtotal']['credit'] += $account['credit'];
+            $groupedData[$generalAccount]['subtotal']['ending_balance'] += $account['ending_balance'];
         }
+
+        $groupedData = array_filter($groupedData, function($group) {
+            return !empty($group['details']);
+        });
+
+        ksort($groupedData);
 
         // Siapkan data untuk ditampilkan
         $reportData = [];
@@ -514,17 +953,19 @@ class RptTrBalanceSinaController extends Controller
         ];
 
         foreach ($groupedData as $generalAccount => $group) {
-            $getAccName = AccountListSinaModel::select('account_name')
-                ->where('account_no', $generalAccount)
-                ->first();
-            $getAccName_x = $generalAccount . " - " . $getAccName->account_name;
+            $generalAccountName = isset($generalAccounts[$generalAccount])
+                ? $generalAccount . " - " . $generalAccounts[$generalAccount]->account_name
+                : (isset($allAccountList[$generalAccount])
+                    ? $generalAccount . " - " . $allAccountList[$generalAccount]->account_name
+                    : $generalAccount . " - Unknown Account");
 
-            // Tambahkan header general account
             $reportData[] = [
                 'is_general_account' => true,
-                'general_account' => $getAccName_x,
+                'general_account' => $generalAccountName,
                 'account_no' => '',
                 'account_name' => '',
+                'code_cost' => '',
+                'cost_center_name' => '',
                 'beginning_balance' => '',
                 'dc1' => '',
                 'debit' => '',
@@ -533,11 +974,16 @@ class RptTrBalanceSinaController extends Controller
                 'dc2' => '',
             ];
 
-            // Tambahkan detail per account_no
-            foreach ($group['details'] as $accountNo => $account) {
+            foreach ($group['details'] as $account) {
+                $costCenterName = $account['code_cost'] 
+                    ? ($costCenterNames[$account['code_cost']] ?? $account['code_cost'])
+                    : '';
+                    
                 $reportData[] = [
-                    'account_no' => $accountNo,
+                    'account_no' => $account['account_no'],
                     'account_name' => $account['account_name'],
+                    'code_cost' => $account['code_cost'],
+                    'cost_center_name' => $costCenterName,
                     'beginning_balance' => $account['beginning_balance'],
                     'dc1' => $account['bbs'],
                     'debit' => $account['debit'],
@@ -547,71 +993,94 @@ class RptTrBalanceSinaController extends Controller
                 ];
             }
 
-            // Tambahkan subtotal untuk general_account
+            // Untuk perhitungan Subtotal
+            $firstGenAcc = (int) substr((string) $generalAccount, 0, 1);
+            $firstTwoDigits = (int) substr((string) $generalAccount, 0, 2);
+            $balance = $group['subtotal']['beginning_balance'] ?? null;
+
+            if ($firstTwoDigits == "16") {
+                $dc_sub = 'C';
+            } elseif ($firstGenAcc == "2") {                
+                $dc_sub = is_null($balance) || $balance < 0 ? 'C' : 'D';
+            } elseif ($firstTwoDigits == "31") {
+                $dc_sub = 'C';
+            } elseif ($firstTwoDigits == "32") {
+                $dc_sub = 'D';            
+            } else {
+                $dc_sub = $group['subtotal']['beginning_balance'] < 0 ? 'C' : 'D';
+            }
+
+            if ($dc_sub == 'C') {                    
+                if($firstGenAcc == '2'){
+                    $endBalanceSub = abs($group['subtotal']['beginning_balance']) + $group['subtotal']['credit'] - $group['subtotal']['debit'];
+                    $end_dc_sub = abs($group['subtotal']['beginning_balance']) <= 0 ? 'D' : 'C';
+                }else{
+                    $endBalanceSub = abs($group['subtotal']['beginning_balance']) + $group['subtotal']['credit'] - $group['subtotal']['debit'];
+                    $end_dc_sub = abs($group['subtotal']['beginning_balance']) >= 0 ? 'C' : 'D';
+                }                
+            } else {
+                $endBalanceSub = abs($group['subtotal']['beginning_balance']) + $group['subtotal']['debit'] - $group['subtotal']['credit'];
+                
+                if($firstGenAcc == '2'){
+                    $end_dc_sub = abs($endBalanceSub) <= 0 ? 'D' : 'C';
+                }else{
+                    $end_dc_sub = $endBalanceSub >= 0 ? 'D' : 'C';
+                }
+            }            
+
             $reportData[] = [
                 'account_no' => '',
-                'account_name' => 'Subtotal :',
+                'account_name' => '<strong>Subtotal :</strong>',
+                'code_cost' => '',
+                'cost_center_name' => '',
                 'beginning_balance' => $group['subtotal']['beginning_balance'],
-                'dc1' => '',
+                'dc1' => $dc_sub,
                 'debit' => $group['subtotal']['debit'],
                 'credit' => $group['subtotal']['credit'],
-                'ending_balance' => $group['subtotal']['ending_balance'],
-                'dc2' => '',
+                'ending_balance' => $endBalanceSub,
+                'dc2' => $end_dc_sub,
             ];
 
-            // Hitung total keseluruhan
             $total['beginning_balance'] += $group['subtotal']['beginning_balance'];
             $total['debit'] += $group['subtotal']['debit'];
             $total['credit'] += $group['subtotal']['credit'];
-            $total['ending_balance'] += $group['subtotal']['ending_balance'];
+            // $total['ending_balance'] += $group['subtotal']['ending_balance'];
         }
 
-        $totalkredit = $journalDetails->where(function ($item) {
-            return str_starts_with($item->general_account, '4') || str_starts_with($item->general_account, '81');
-        })->sum('kredit');
-
-        $totalDebit = $journalDetails->where(function ($item) {
-            return str_starts_with($item->general_account, '5') ||
-                   str_starts_with($item->general_account, '6') ||
-                   str_starts_with($item->general_account, '7') ||
-                   str_starts_with($item->general_account, '82') ||
-                   str_starts_with($item->general_account, '89') ||
-                   str_starts_with($item->general_account, '9');
-        })->sum('debit');
-
-        // Hitung currentProfitLosskredit
-        $currentProfitLosskredit = $totalkredit - $totalDebit;
-
-        // Tambahkan hasil ke data
-        if ($totalkredit > $totalDebit) {
-            // Jika totalkredit lebih besar, tampilkan di kolom debit
-            $data['currProfitLosskredit'] = [
-                'general_account' => 'CurrentProfitLoss',
-                'general_name' => 'Current Month Profit/Loss',
-                'beginning_balance' => 0,
-                'debit' => $currentProfitLosskredit,
-                'kredit' => 0,
-                'ending_balance' => 0,
-                'ebs' => 'D',
-            ];
-        } else {
-            // Jika totalDebit lebih besar atau sama, tampilkan di kolom kredit
-            $data['currProfitLosskredit'] = [
-                'general_account' => 'CurrentProfitLoss',
-                'general_name' => 'Current Month Profit/Loss',
-                'beginning_balance' => 0,
-                'debit' => 0,
-                'kredit' => $currentProfitLosskredit,
-                'ending_balance' => 0,
-                'ebs' => 'C',
-            ];
+        // Tambahkan Current Profit/Loss ke data dan total
+        if ($currentProfitLosskredit != 0) {
+            if ($currentProfitLosskredit > 0) {
+                $total['debit'] += $currentProfitLossValue;
+                
+                $data['currProfitLosskredit'] = [
+                    'general_account' => 'CurrentProfitLoss',
+                    'general_name' => 'Current Month Profit/Loss',
+                    'beginning_balance' => 0,
+                    'debit' => $currentProfitLossValue,
+                    'kredit' => 0,
+                    'ending_balance' => 0,
+                    'ebs' => 'D',
+                ];
+            } else {
+                $total['credit'] += $currentProfitLossValue;
+                
+                $data['currProfitLosskredit'] = [
+                    'general_account' => 'CurrentProfitLoss',
+                    'general_name' => 'Current Month Profit/Loss',
+                    'beginning_balance' => 0,
+                    'debit' => 0,
+                    'kredit' => $currentProfitLossValue,
+                    'ending_balance' => 0,
+                    'ebs' => 'C',
+                ];
+            }
         }
 
-
+        $total['ending_balance'] = $total['beginning_balance'] + $total['debit'] - $total['credit'];
         $data['reportData'] = $reportData;
         $data['total'] = $total;
         $data['m_date'] = $m_date;
-        $data['y_date'] = $y_date;       
+        $data['y_date'] = $y_date;      
 
         $tgl = now()->format('Ymd_His');
         try {

@@ -150,7 +150,7 @@
       </ul>
     </li>
     <!-- Forms -->
-    <li class="{{ request()->is('rptGenLedSina','rptTrBalanceSina','rptTbSummarySina') ? 'menu-item active open' : 'menu-item' }}">
+    <li class="{{ request()->is('rptGenLedSina','rptTrBalanceSina','rptNeracaSina','rptTbSummarySina') ? 'menu-item active open' : 'menu-item' }}">
       <a href="javascript:void(0)" class="menu-link menu-toggle">
         <i class="menu-icon tf-icons ti ti-report"></i>
         <div data-i18n="Report">Report</div>
@@ -166,6 +166,12 @@
           <a href="{{ route('rptTrBalanceSina') }}" class="menu-link">
             <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
             <div data-i18n="Trial Balance">Trial Balance</div>
+          </a>
+        </li>
+        <li class="{{ request()->is('rptNeracaSina') ? 'menu-item active' : 'menu-item' }}">
+          <a href="{{ route('rptNeracaSina') }}" class="menu-link">
+            <i class="menu-icon tf-icons ti ti-chart-pie-2"></i>
+            <div data-i18n="Neraca">Neraca</div>
           </a>
         </li>
         <li class="{{ request()->is('rptTbSummarySina') ? 'menu-item active' : 'menu-item' }}">

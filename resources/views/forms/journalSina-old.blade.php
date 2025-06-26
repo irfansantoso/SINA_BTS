@@ -69,7 +69,11 @@
                 <label class="col-sm-1 col-form-label" for="basic-default-name">Tanggal</label>
                 <div class="col-sm-2">
                     <input type="date" class="form-control" id="journal_date" name="journal_date">
-                </div>             
+                </div> 
+                <label class="col-sm-2 col-form-label text-end" for="basic-default-name">Jatuh Tempo</label>
+                <div class="col-sm-2">
+                    <input type="date" class="form-control" id="due_date" name="due_date">
+                </div>              
               </div>
               <div class="pt-1">
                   <button type="button" id="addBtn" class="btn btn-success">Save Header</button>
@@ -108,7 +112,7 @@
                     </div>
                     <div class="col-md-1">
                         <label class="col-form-label text-end" for="basic-default-name">Currency</label>             
-                        <input type="text" data-bs-toggle="" data-bs-target="" class="form-control" id="code_currency" name="code_currency" value="IDR" readonly>
+                        <input type="text" data-bs-toggle="modal" data-bs-target="#modCurrList" class="form-control" id="code_currency" name="code_currency" placeholder="Klik here.." readonly>
                     </div>
                     <div class="col-md-2">
                         <label class="col-form-label text-end" for="basic-default-name">Debit</label>             
@@ -120,7 +124,7 @@
                     </div>
                     <div class="col-md-1">
                         <label class="col-form-label text-end" for="basic-default-name">Kurs</label>             
-                        <input type="text" class="form-control" id="kurs" name="kurs" value="1">
+                        <input type="text" class="form-control" id="kurs" name="kurs">
                     </div>
                     <div class="col-md-2">
                         <label class="col-form-label text-end" for="basic-default-name">Jumlah Total</label>             
@@ -325,8 +329,7 @@
     
 @stop
 @section('custom-js')
-<script type="text/javascript"> 
-let debounceTimer;   
+<script type="text/javascript">    
 var table; // Declare table variable in global scope
 $(document).ready(function() {
     table = $('#journalDetailSina_dt').DataTable({
@@ -398,13 +401,6 @@ $(document).ready(function() {
         scrollX: true,
         order: [[1, 'asc']]
     });
-
-    $('#description_detail').on('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            $('#addBtnDetail').click();
-        }
-    });
     
     $('#addBtn').on('click', function(event) {
         event.preventDefault();
@@ -439,6 +435,7 @@ $(document).ready(function() {
         $('#journal_jrc_no').val("");
         $('#dt_periode').val("");
         $('#journal_date').val("");        
+        $('#due_date').val("");
         $('#description').val("");
         $('#total_debit').html("");
         $('#total_kredit').html("");
@@ -459,13 +456,14 @@ $(document).ready(function() {
         $('.form-detail').show();
         $('.table-detail').show();
         $('#journal_date').val("");
+        $('#due_date').val("");
         $('#description').val("");
         $('#total_debit').html("");
         $('#total_kredit').html("");
         $('#difference').html("");
         table.ajax.reload();      
         // alert(c_jgr);
-    });    
+    });
 
     $('#journal_jrc_no').on('input', function(event) {
         event.preventDefault();
@@ -478,35 +476,9 @@ $(document).ready(function() {
         $('#total_debit').html("");
         $('#total_kredit').html("");
         $('#difference').html("");
-
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function() {
-            table.ajax.reload();
-        }, 500); // 500ms setelah user berhenti mengetik
+        table.ajax.reload();
         
     });
-
-    $('#debit').on('input', function(event) {
-        event.preventDefault();
-        debit = $('#debit').val();
-        kurs = $('#kurs').val();
-        description = $('#description').val();
-
-        jum_ttl = debit*kurs;
-        $('#jumlah_total').val(jum_ttl);
-        $('#description_detail').val(description);        
-    }); 
-
-    $('#kredit').on('input', function(event) {
-        event.preventDefault();
-        kredit = $('#kredit').val();
-        kurs = $('#kurs').val();
-        description = $('#description').val();
-
-        jum_ttl = kredit*kurs;
-        $('#jumlah_total').val(jum_ttl);
-        $('#description_detail').val(description);        
-    });   
 
     $('#kurs').on('input', function(event) {
         event.preventDefault();
@@ -518,7 +490,7 @@ $(document).ready(function() {
         jum_ttl = (debit+kredit)*kurs;
         $('#jumlah_total').val(jum_ttl);
         $('#description_detail').val(description);        
-    });
+    });    
 
     $('#modAccList').on('shown.bs.modal', function () {
         $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
@@ -542,14 +514,10 @@ var table_mod;
 $(document).ready(function() {
     table_mod = $('#accountTable').DataTable({
         processing: true,
-        serverSide: false,
+        serverSide: true,
         ajax: '{!! route('accountListSina.data') !!}',
         columns: [
-            { data: null, name: 'DT_RowIndex', orderable: false, searchable: false, 
-                render: function (data, type, row, meta) {
-                    return meta.row + 1;
-                } 
-            },
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'account_no', name: 'account_no' },
             { data: 'account_name', name: 'account_name' },
             { data: 'typeName', name: 'typeName' },
@@ -572,7 +540,7 @@ $(document).ready(function() {
             });
         },
         scrollX: true,
-        order: [[0, 'asc']]
+        order: [[1, 'asc']]
     });
     
     $('#modAccList').on('shown.bs.modal', function () {
@@ -580,50 +548,16 @@ $(document).ready(function() {
         // Fokus pada input pencarian DataTables
         $('#accountTable_wrapper .dataTables_filter input').focus();
     });
-
-    // ✅ Debounced search input dan enter trigger
-    $(document).on('keyup', '.dataTables_filter input', function (e) {
-        const input = $(this).val();
-
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function () {
-            table_mod.search(input).draw();
-        }, 200);
-    });
-
-    // ✅ Trigger pick saat tekan Enter
-    $(document).on('keydown', '#accountTable_filter input', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            clearTimeout(debounceTimer); // stop debounce kalau langsung tekan Enter
-            table_mod.search($(this).val()).draw();
-
-            // Cari baris pertama yang terlihat
-            const firstVisibleRow = $('#accountTable tbody tr:visible').first();
-
-            if (firstVisibleRow.length) {
-                const pickButton = firstVisibleRow.find('a.item-edit');
-                if (pickButton.length) {
-                    pickButton[0].click(); // atau pickButton.trigger('click');
-                }
-            }
-        }
-    });
-    
 });
 
 var table_modCost;
 $(document).ready(function() {
     table_modCost = $('#costTable').DataTable({
         processing: true,
-        serverSide: false,
+        serverSide: true,
         ajax: '{!! route('costListSina.data') !!}',
         columns: [
-            { data: null, name: 'DT_RowIndex', orderable: false, searchable: false, 
-                render: function (data, type, row, meta) {
-                    return meta.row + 1;
-                } 
-            },
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'code_cost', name: 'code_cost' },
             { data: 'cost_description', name: 'cost_description' },
             { data: 'cost_category', name: 'cost_category' },
@@ -646,50 +580,11 @@ $(document).ready(function() {
             });
         },
         scrollX: true,
-        order: [[0, 'asc']]
+        order: [[1, 'asc']]
     });
-
-    $(document).on('keydown', '#code_cost', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            $('#modCostList').modal('show'); // buka modal secara manual
-        }
-    });
-
     $('#modCostList').on('shown.bs.modal', function () {
-        table_modCost.search('').draw();
         // Fokus pada input pencarian DataTables
         $('#costTable_wrapper .dataTables_filter input').focus();
-    });
-
-    // ✅ Debounced search input dan enter trigger
-    $(document).on('keyup', '#costTable_filter input', function (e) {
-        const input = $(this).val();
-
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function () {
-            table_modCost.search(input).draw();
-        }, 300);
-    });
-
-    // ✅ Aksi tekan Enter di kolom pencarian
-    $(document).on('keydown', '#costTable_filter input', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-
-            // Cari baris pertama yang terlihat
-            const firstVisibleRow = $('#costTable tbody tr:visible').first();
-
-            if (firstVisibleRow.length) {
-                const pickButton = firstVisibleRow.find('a.item-edit');
-                if (pickButton.length) {
-                    pickButton[0].click(); // atau pickButton.trigger('click');
-                    setTimeout(function () {
-                        $('#code_cost').focus();
-                    }, 50);
-                }
-            }
-        }
     });
 });
 
@@ -697,14 +592,10 @@ var table_modDiv;
 $(document).ready(function() {
     table_modDiv = $('#divTable').DataTable({
         processing: true,
-        serverSide: false,
+        serverSide: true,
         ajax: '{!! route('divisionListSina.data') !!}',
         columns: [
-            { data: null, name: 'DT_RowIndex', orderable: false, searchable: false, 
-                render: function (data, type, row, meta) {
-                    return meta.row + 1;
-                } 
-            },
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'code', name: 'code' },
             { data: 'division_name', name: 'division_name' },
             { data: 'category', name: 'category' },
@@ -727,51 +618,11 @@ $(document).ready(function() {
             });
         },
         scrollX: true,
-        order: [[0, 'asc']]
+        order: [[1, 'asc']]
     });
-
-    $(document).on('keydown', '#code_div', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            $('#modDivList').modal('show'); // buka modal secara manual
-        }
-    });
-
     $('#modDivList').on('shown.bs.modal', function () {
-        table_modDiv.search('').draw();
         // Fokus pada input pencarian DataTables
         $('#divTable_wrapper .dataTables_filter input').focus();
-    });
-
-    // ✅ Debounced search input dan enter trigger
-    $(document).on('keyup', '#divTable_filter input', function (e) {
-        const input = $(this).val();
-
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function () {
-            table_modDiv.search(input).draw();
-        }, 200);
-    });
-
-    // ✅ Aksi tekan Enter di kolom pencarian
-    $(document).on('keydown', '#divTable_filter input', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-
-            // Cari baris pertama yang terlihat
-            const firstVisibleRow = $('#divTable tbody tr:visible').first();
-
-            if (firstVisibleRow.length) {
-                const pickButton = firstVisibleRow.find('a.item-edit');
-                if (pickButton.length) {
-                    pickButton[0].click(); // atau pickButton.trigger('click');
-                    // ✅ Setelah klik, fokus kembali ke input field
-                    setTimeout(function () {
-                        $('#code_div').focus();
-                    }, 50); 
-                }
-            }
-        }
     });
     
 });
@@ -917,6 +768,7 @@ function setFormByHeader(j_jrc_no, c_jgr, c_jrc) {
 
                 // Isi nilai ke input form
                 $('#journal_date').val(data.journal_date);
+                $('#due_date').val(data.due_date);
                 $('#description').val(data.description);
 
 
@@ -942,6 +794,7 @@ function setFormByHeader(j_jrc_no, c_jgr, c_jrc) {
             $('#formMethod').val('POST');
             $('#formTitle').text('Form Header');
             $('#journal_date').val("");
+            $('#due_date').val("");
             $('#description').val("");
 
             $('#addBtn').off('click').on('click', function(event) {
@@ -998,6 +851,7 @@ function addJournalSina() {
     var cpx = $('#cpx').val();
     var description = $('#description').val();
     var journal_date = $('#journal_date').val();
+    var due_date = $('#due_date').val();
     var jjrc_no = cpx+journal_jrc_no;
 
     if (code_jgr === '' || code_jrc === '' || journal_jrc_no === '') {
@@ -1028,6 +882,21 @@ function addJournalSina() {
         });
         return;
     }
+    if (due_date === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Tanggal jatuh tempo tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        }).then(() => {
+            // Fokus ke input setelah SweetAlert ditutup
+            $('#due_date').focus();
+        });
+        return;
+    }
     if (account_no === '') {
         Swal.fire({
             icon: 'error',
@@ -1054,7 +923,8 @@ function addJournalSina() {
             journal_jrc_no: journal_jrc_no,
             cpx: cpx,
             description: description,
-            journal_date: journal_date
+            journal_date: journal_date,
+            due_date: due_date
         },
         success: function(response) {            
 
@@ -1129,6 +999,7 @@ function addDetailJournalSina() {
     var cpx = $('#cpx').val();
     var description = $('#description').val();
     var journal_date = $('#journal_date').val();
+    var due_date = $('#due_date').val();
     var general_account = $('#general_account').val();
     var account_no = $('#account_no').val();
     var code_cost = $('#code_cost').val();
@@ -1168,6 +1039,21 @@ function addDetailJournalSina() {
         });
         return;
     }
+    if (due_date === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Tanggal jatuh tempo tidak boleh kosong!!',
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            },
+            buttonsStyling: false
+        }).then(() => {
+            // Fokus ke input setelah SweetAlert ditutup
+            $('#due_date').focus();
+        });
+        return;
+    }
     if (account_no === '') {
         Swal.fire({
             icon: 'error',
@@ -1195,6 +1081,7 @@ function addDetailJournalSina() {
             cpx: cpx,
             description: description,
             journal_date: journal_date,
+            due_date: due_date,
             general_account: general_account,
             account_no: account_no,
             code_cost: code_cost,
@@ -1211,7 +1098,8 @@ function addDetailJournalSina() {
             // $('#journal_jrc_no').val(response.journal_jrc_no);
             // Reload table without resetting pagination
             table.ajax.reload(null, false);
-            setDebKre(journal_jrc_no,code_jgr,code_jrc);            
+            setDebKre(journal_jrc_no,code_jgr,code_jrc);
+
             Swal.fire({
                 icon: 'success',
                 title: 'Berhasil',
@@ -1222,7 +1110,7 @@ function addDetailJournalSina() {
                   confirmButton: 'btn btn-primary'
                 },
                 buttonsStyling: false,
-                timer: 500, // 1 detik
+                timer: 1000, // 1 detik
                 timerProgressBar: true,
                 willClose: () => {
                     resetFormAndButtonDetail();
@@ -1303,6 +1191,7 @@ function editJournalDetail(id_jd) {
 
 function updateJournalDetailSina(id_jd) {
     var journal_date = $('#journal_date').val();
+    var due_date = $('#due_date').val();
     var general_account = $('#general_account').val();
     var account_no = $('#account_no').val();
     var code_cost = $('#code_cost').val();
@@ -1313,12 +1202,10 @@ function updateJournalDetailSina(id_jd) {
     var kurs = $('#kurs').val();
     var jumlah_total = $('#jumlah_total').val();
     var description_detail = $('#description_detail').val();
-    var cpx = $('#cpx').val();
 
     var j_jrc_no = $('#journal_jrc_no').val();
     var c_jgr = $('#code_jgr').val();
     var c_jrc = $('#code_jrc').val();
-    var jjrc_no = cpx+j_jrc_no;
 
     $.ajax({
         url: `journalDetailSina/update/${id_jd}`, // Update route
@@ -1327,6 +1214,7 @@ function updateJournalDetailSina(id_jd) {
             _method: 'PUT',  // Spoof method to PUT
             _token: '{{ csrf_token() }}',
             journal_date: journal_date,
+            due_date: due_date,
             general_account: general_account,
             account_no: account_no,
             code_cost: code_cost,
@@ -1349,30 +1237,15 @@ function updateJournalDetailSina(id_jd) {
                 icon: 'success',
                 title: 'Berhasil',
                 text: 'Data berhasil diubah!',
-                showCancelButton: false,
-                confirmButtonText: 'OK',
                 customClass: {
                   confirmButton: 'btn btn-primary'
                 },
-                buttonsStyling: false,
-                timer: 500, // 1 detik
-                timerProgressBar: true,
-                willClose: () => {
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
                     resetFormAndButtonDetail();
-                    $('#formAuthentication').attr('action', `journalSina/update/${jjrc_no}/${c_jgr}/${c_jrc}`);
-                    $('#formTitle').text('Edit Form');
-                    $('#addBtn').text('Edit');
-
-                    $('#formMethod').val('PUT');
-
-                    // Ubah event tombol untuk proses ke add lagi
-                    $('#addBtnDetail').off('click').on('click', function(event) {
-                        event.preventDefault();
-                        // table.ajax.reload();
-                        addDetailJournalSina();
-                    });
                 }
-            });
+            }); 
         }
         
     });
@@ -1381,6 +1254,7 @@ function updateJournalDetailSina(id_jd) {
 function updateJournalSina(j_jrc_no,c_jgr,c_jrc) {
     var description = $('#description').val();
     var journal_date = $('#journal_date').val();
+    var due_date = $('#due_date').val();
 
     $.ajax({
         url: `journalSina/update/${j_jrc_no}/${c_jgr}/${c_jrc}`, // Update route
@@ -1389,7 +1263,8 @@ function updateJournalSina(j_jrc_no,c_jgr,c_jrc) {
             _method: 'PUT',  // Spoof method to PUT
             _token: '{{ csrf_token() }}',
             description: description,
-            journal_date: journal_date
+            journal_date: journal_date,
+            due_date: due_date
             
         },
         success: function(journalSinaUpdate) {
@@ -1420,6 +1295,7 @@ function resetFormAndButton() {
     $('#journal_jrc_no').val('');
     $('#description').val('');
     $('#journal_date').val('');
+    $('#due_date').val('');
     $('#cp').text("");
 
     $('.form-detail').hide();
@@ -1440,10 +1316,10 @@ function resetFormAndButtonDetail() {
     $('#code_cost').val('').css('background-color', '');
     $('#account_name').val('').css('background-color', '');
     $('#code_div').val('').css('background-color', '');
-    $('#code_currency').css('background-color', '');
+    $('#code_currency').val('').css('background-color', '');
     $('#debit').val('').css('background-color', '');
     $('#kredit').val('').css('background-color', '');
-    $('#kurs').css('background-color', '');
+    $('#kurs').val('').css('background-color', '');
     $('#jumlah_total').val('').css('background-color', '');
     $('#description_detail').val('').css('background-color', '');
 
@@ -1487,23 +1363,14 @@ function deleteJournalDetail(id_jd) {
             _token: '{{ csrf_token() }}',
         },
         success: function(response) {
-            
             Swal.fire({
                 icon: 'success',
-                title: 'Berhasil',
-                text: 'Data berhasil dihapus!',
-                showCancelButton: false,
-                confirmButtonText: 'OK',
+                title: 'Berhasil!',
+                text: 'Data berhasil dihapus.',
                 customClass: {
-                  confirmButton: 'btn btn-primary'
+                    confirmButton: 'btn btn-primary'
                 },
-                buttonsStyling: false,
-                timer: 500, // 1 detik
-                timerProgressBar: true,
-                willClose: () => {
-                    resetFormAndButtonDetail();
-                    table.ajax.reload();                    
-                }
+                buttonsStyling: false
             });
             table.ajax.reload(null, false);
             setDebKre(j_jrc_no,c_jgr,c_jrc);

@@ -76,7 +76,7 @@ class RptGenLedSinaController extends Controller
         $data['code_cost'] = $code_cost;
         $data['code_div'] = $code_div;
 
-        // Get journal details for requested period
+        // Ambil detail jurnal untuk periode yang diminta
         $journalDetails = DB::table('tb_journal_detail as jd')
             ->join('tb_journal_header as jh', 'jd.journal_head_id', '=', 'jh.id_journal_head')
             ->join('tb_account_list as acc', 'jd.account_no', '=', 'acc.account_no')
@@ -107,11 +107,13 @@ class RptGenLedSinaController extends Controller
             ->orderBy('jd.account_no')
             ->orderBy('jd.journal_date')
             ->orderBy('jd.code_cost')
-            ->orderBy('jd.code_div')
             ->orderBy('jd.id_journal_detail')            
             ->get();
 
-        // Get ending balance from previous month (untuk semua akun)
+        // Ambil saldo akhir bulan sebelumnya
+        $previousDateStart = '2000-01-01'; // atau bisa juga dari tanggal awal sistem Anda
+        $previousDateEnd = date('Y-m-d', strtotime($s_date . ' -1 day'));
+
         $beginningBalance = DB::table('tb_journal_detail as jd')
             ->selectRaw("
                 jd.account_no,
@@ -145,87 +147,43 @@ class RptGenLedSinaController extends Controller
             ->groupBy('jd.account_no', 'jd.code_cost')
             ->get();
 
-        // 1. Dapatkan nilai awal 3202.0001
-        $modalBalance = DB::table('tb_journal_detail as jd')
-            ->selectRaw("
-                jd.account_no,
-                SUM(COALESCE(jd.kredit, 0)) - SUM(COALESCE(jd.debit, 0)) as beginning_balance
-            ")
-            ->where('jd.account_no', '3202.0001')
-            ->where('jd.journal_date', '<', $s_date)
-            ->when($code_cost != "0", function ($query) use ($code_cost) {
-                return $query->where('jd.code_cost', $code_cost);
-            })
-            ->when($code_div != "0", function ($query) use ($code_div) {
-                return $query->where('jd.code_div', $code_div);
-            })
-            ->groupBy('jd.account_no')
-            ->first();
 
-        $modalAmount = $modalBalance->beginning_balance ?? 0;
+        $balance3201 = $beginningBalance->where('account_no', '3202.0001')->sum('beginning_balance');
 
-        // 2. Gabungkan ke 3201.0001 dan set 3202.0001 ke 0
-        $beginningBalance = $beginningBalance->map(function ($item) use ($modalAmount) {
+        $beginningBalance = $beginningBalance->map(function ($item) use ($balance3201) {
             if ($item->account_no == '3201.0001') {
-                $item->beginning_balance += $modalAmount;
-            }
-            if ($item->account_no == '3202.0001') {
-                $item->beginning_balance = 0; // Set ke 0
+                $item->beginning_balance += $balance3201;
+                // Jika saldo negatif, set d_c menjadi 'D'
+                if ($item->beginning_balance < 0) {
+                    $item->d_c = 'D';
+                }
             }
             return $item;
         });
 
-        // 3. Hitung nilai 3202.0001 dari transaksi tahun berjalan (account 5-9)
-        $currentYear = date('Y', strtotime($s_date));
-        $currentYearModal = DB::table('tb_journal_detail as jd')
-            ->selectRaw("
-                SUM(
-                    CASE
-                        WHEN jd.account_no LIKE '5%' OR 
-                             jd.account_no LIKE '6%' OR 
-                             jd.account_no LIKE '7%' OR 
-                             jd.account_no LIKE '8%' OR 
-                             jd.account_no LIKE '9%'
-                        THEN COALESCE(jd.kredit, 0) - COALESCE(jd.debit, 0)
-                        ELSE 0
-                    END
-                ) as modal_amount
-            ")
-            ->whereYear('jd.journal_date', $currentYear)
-            ->where('jd.journal_date', '<', $s_date)
-            ->when($code_cost != "0", function ($query) use ($code_cost) {
-                return $query->where('jd.code_cost', $code_cost);
-            })
-            ->when($code_div != "0", function ($query) use ($code_div) {
-                return $query->where('jd.code_div', $code_div);
-            })
-            ->first();
+        // Gabungkan semua akun yang ada di saldo awal dan transaksi
+        $allAccounts = $beginningBalance->pluck('account_no')->merge($journalDetails->pluck('account_no'))->unique();
 
-        $currentYearModalAmount = $currentYearModal->modal_amount ?? 0;
-
-        // Combine all accounts from beginning balance and transactions
-        $allAccounts = $beginningBalance->pluck('account_no')
-            ->merge($journalDetails->pluck('account_no'))
-            ->unique();
-
-        // Process data for report
-        $reportData = $allAccounts->map(function ($accountNo) use ($journalDetails, $beginningBalance, $currentYearModalAmount) {
+        // Proses data untuk laporan
+        $reportData = $allAccounts->map(function ($accountNo) use ($journalDetails, $beginningBalance) {
             $items = $journalDetails->where('account_no', $accountNo);
-            $accountName = $items->first()->account_name ?? DB::table('tb_account_list')
-                ->where('account_no', $accountNo)
-                ->value('account_name') ?? 'Unknown';
+            $accountName = $items->first()->account_name ?? DB::table('tb_account_list')->where('account_no', $accountNo)->value('account_name') ?? 'Unknown';
 
+            // Default DC - ambil dari beginning balance jika ada
             $beginBalanceInfo = $beginningBalance->where('account_no', $accountNo)->first();
-            $d_c = $beginBalanceInfo->d_c ?? 'D';
-
-            $transactions = [];
-            $beginBalanceValue = $beginningBalance->where('account_no', $accountNo)->sum('beginning_balance');
-
-            // Khusus 3202.0001, gunakan nilai dari perhitungan tahun berjalan
-            if ($accountNo == '3202.0001') {
-                $beginBalanceValue = $currentYearModalAmount;
+            $d_c = $beginBalanceInfo->d_c ?? 'D'; // Default to 'D' if not found
+            
+            // Override khusus untuk 3201.0001 jika saldo awal negatif
+            if ($accountNo == '3201.0001') {
+                $totalBeginBalance = $beginningBalance->where('account_no', $accountNo)->sum('beginning_balance');
+                if ($totalBeginBalance < 0) {
+                    $d_c = 'D';
+                }
             }
 
+            $transactions = [];
+
+            // BEGINNING BALANCE (SALDO AWAL) - ditampilkan sekali di awal
             $transactions[] = (object) [
                 'formatted_date' => '',
                 'journal_no' => '',
@@ -234,20 +192,20 @@ class RptGenLedSinaController extends Controller
                 'description_detail' => 'BEGINNING BALANCE',
                 'debit' => 0,
                 'kredit' => 0,
-                'ending_balance' => abs($beginBalanceValue),
-                'dc' => ($beginBalanceValue >= 0) ? $d_c : ($d_c == 'D' ? 'C' : 'D'),
+                'ending_balance' => 0, // Akan diupdate per kelompok cost
+                'dc' => $d_c,
                 'is_subtotal' => false,
             ];
 
-            // Group transactions by code_cost
-            $groupedTransactions = $items->sortBy('code_cost')->groupBy('code_cost');
+            // Kelompokkan transaksi berdasarkan code_cost
+            $groupedTransactions = $items->groupBy('code_cost');
 
             $totalDebit = 0;
             $totalCredit = 0;
-            $totalEndingBalance = $beginBalanceValue;
+            $totalEndingBalance = 0;
 
             foreach ($groupedTransactions as $codeCost => $group) {
-                // Get beginning balance for this cost center group
+                // Ambil saldo awal untuk kelompok cost center ini
                 $beginBalanceForCost = $beginningBalance
                     ->where('account_no', $accountNo)
                     ->where('code_cost', $codeCost)
@@ -258,14 +216,13 @@ class RptGenLedSinaController extends Controller
                 $subTotalCredit = 0;
 
                 foreach ($group as $transaction) {
-                    // Calculate running balance
+                    // Hitung saldo berjalan
                     if ($d_c == 'D') {
                         $currentBalance += ($transaction->debit ?? 0) - ($transaction->kredit ?? 0);
                     } else {
                         $currentBalance += ($transaction->kredit ?? 0) - ($transaction->debit ?? 0);
                     }
                     
-                    // $dc_end = ($currentBalance <= 0) ? 'D' : ($d_c == 'D' ? 'C' : 'D');
                     $dc_end = ($currentBalance >= 0) ? $d_c : ($d_c == 'D' ? 'C' : 'D');
 
                     $transactions[] = (object) [
@@ -285,18 +242,12 @@ class RptGenLedSinaController extends Controller
                     $subTotalCredit += $transaction->kredit;
                 }
 
-                $firstGenAcc = (int) substr((string) $accountNo, 0, 1);
-                // Update totals
+                // Update total
                 $totalDebit += $subTotalDebit;
                 $totalCredit += $subTotalCredit;
-                if ($firstGenAcc == "1" || $firstGenAcc == "2" || $firstGenAcc == "3") {
-                    $totalEndingBalance = $currentBalance;
-                }else{
-                    $totalEndingBalance = $totalDebit - $totalCredit;
-                }                
-                // $totalEndingBalance = $currentBalance;
+                $totalEndingBalance += $currentBalance;
 
-                // Sub Total per cost center group
+                // Sub Total per kelompok cost center
                 $transactions[] = (object) [
                     'formatted_date' => '',
                     'journal_no' => '',
@@ -311,10 +262,20 @@ class RptGenLedSinaController extends Controller
                 ];
             }
 
+            // Update beginning balance transaction with total beginning balance
+            $totalBeginBalance = $beginningBalance->where('account_no', $accountNo)->sum('beginning_balance');
+            if (count($transactions) > 0) {
+                $transactions[0]->ending_balance = abs($totalBeginBalance);
+                // Khusus untuk 3201.0001, jika saldo awal negatif, set dc menjadi 'D'
+                if ($accountNo == '3201.0001' && $totalBeginBalance < 0) {
+                    $transactions[0]->dc = 'D';
+                }
+            }
+
             return [
                 'account_no' => $accountNo,
                 'account_name' => $accountName,
-                'beginning_balance' => $beginBalanceValue,
+                'beginning_balance' => $totalBeginBalance,
                 'debit' => $totalDebit,
                 'credit' => $totalCredit,
                 'ending_balance' => abs($totalEndingBalance),
@@ -323,17 +284,36 @@ class RptGenLedSinaController extends Controller
             ];
         })->sortBy('account_no');
 
-        // Calculate totals for report footer
+        // Hitung total untuk footer laporan
         $data['totalDebit'] = $reportData->sum('debit');
         $data['totalCredit'] = $reportData->sum('credit');
-        
-        $data['totalBalance'] = $data['totalDebit'] - $data['totalCredit'];
+        // Perbaikan perhitungan total balance
+        $data['totalBalance'] = $reportData->sum(function ($account) {
+            $balance = $account['ending_balance'];
+            $dc = $account['dc'];
+            
+            // Penanganan khusus untuk akun 3201.0001
+            if ($account['account_no'] == '3201.0001') {
+                // Jika beginning balance negatif, perlakukan sebagai debit
+                if ($account['beginning_balance'] < 0) {
+                    return $balance;
+                }
+                return -$balance;
+            }
+            
+            // Untuk akun modal lainnya (dimulai dengan 3)
+            if (str_starts_with($account['account_no'], '3')) {
+                return -$balance; // Normal saldo credit untuk akun modal
+            }
+            
+            // Untuk akun lainnya (aktiva, dll)
+            return ($dc == 'D') ? $balance : -$balance;
+        });
 
-        // Ensure total balance is 0 if debit and credit are balanced
+        // Pastikan total balance adalah 0 jika debit dan credit sudah balance
         if ($data['totalDebit'] == $data['totalCredit']) {
             $data['totalBalance'] = 0;
         }
-        
         $data['reportData'] = $reportData;
 
         return view('reporting/rptGenLedSinaModal', $data);
@@ -349,7 +329,7 @@ class RptGenLedSinaController extends Controller
         $data['code_cost'] = $code_cost;
         $data['code_div'] = $code_div;
 
-        // Get journal details for requested period
+        // Ambil detail jurnal untuk periode yang diminta
         $journalDetails = DB::table('tb_journal_detail as jd')
             ->join('tb_journal_header as jh', 'jd.journal_head_id', '=', 'jh.id_journal_head')
             ->join('tb_account_list as acc', 'jd.account_no', '=', 'acc.account_no')
@@ -383,11 +363,13 @@ class RptGenLedSinaController extends Controller
             ->orderBy('jd.id_journal_detail')            
             ->get();
 
-        // Get ending balance from previous month (untuk semua akun)
+        // Ambil saldo akhir bulan sebelumnya
+        $previousDateStart = '2000-01-01'; // atau bisa juga dari tanggal awal sistem Anda
+        $previousDateEnd = date('Y-m-d', strtotime($s_date . ' -1 day'));
+
         $beginningBalance = DB::table('tb_journal_detail as jd')
             ->selectRaw("
                 jd.account_no,
-                jd.code_cost,
                 SUM(
                     CASE
                         WHEN jd.account_no LIKE '1%' THEN COALESCE(jd.debit, 0) - COALESCE(jd.kredit, 0)
@@ -414,90 +396,37 @@ class RptGenLedSinaController extends Controller
             ->when($code_div != "0", function ($query) use ($code_div) {
                 return $query->where('jd.code_div', $code_div);
             })
-            ->groupBy('jd.account_no', 'jd.code_cost')
+            ->groupBy('jd.account_no')
             ->get();
 
-        // 1. Dapatkan nilai awal 3202.0001
-        $modalBalance = DB::table('tb_journal_detail as jd')
-            ->selectRaw("
-                jd.account_no,
-                SUM(COALESCE(jd.kredit, 0)) - SUM(COALESCE(jd.debit, 0)) as beginning_balance
-            ")
-            ->where('jd.account_no', '3202.0001')
-            ->where('jd.journal_date', '<', $s_date)
-            ->when($code_cost != "0", function ($query) use ($code_cost) {
-                return $query->where('jd.code_cost', $code_cost);
-            })
-            ->when($code_div != "0", function ($query) use ($code_div) {
-                return $query->where('jd.code_div', $code_div);
-            })
-            ->groupBy('jd.account_no')
-            ->first();
+        // Ambil saldo awal untuk 3202.0001
+        $balance3202 = $beginningBalance->firstWhere('account_no', '3202.0001')?->beginning_balance ?? 0;
 
-        $modalAmount = $modalBalance->beginning_balance ?? 0;
-
-        // 2. Gabungkan ke 3201.0001 dan set 3202.0001 ke 0
-        $beginningBalance = $beginningBalance->map(function ($item) use ($modalAmount) {
+        // Tambahkan saldo 3202.0001 ke 3201.0001
+        $beginningBalance = $beginningBalance->map(function ($item) use ($balance3202) {
             if ($item->account_no == '3201.0001') {
-                $item->beginning_balance += $modalAmount;
-            }
-            if ($item->account_no == '3202.0001') {
-                $item->beginning_balance = 0; // Set ke 0
+                $item->beginning_balance += $balance3202;
+            } elseif ($item->account_no == '3202.0001') {
+                $item->beginning_balance = 0;
             }
             return $item;
         });
 
-        // 3. Hitung nilai 3202.0001 dari transaksi tahun berjalan (account 5-9)
-        $currentYear = date('Y', strtotime($s_date));
-        $currentYearModal = DB::table('tb_journal_detail as jd')
-            ->selectRaw("
-                SUM(
-                    CASE
-                        WHEN jd.account_no LIKE '5%' OR 
-                             jd.account_no LIKE '6%' OR 
-                             jd.account_no LIKE '7%' OR 
-                             jd.account_no LIKE '8%' OR 
-                             jd.account_no LIKE '9%'
-                        THEN COALESCE(jd.kredit, 0) - COALESCE(jd.debit, 0)
-                        ELSE 0
-                    END
-                ) as modal_amount
-            ")
-            ->whereYear('jd.journal_date', $currentYear)
-            ->where('jd.journal_date', '<', $s_date)
-            ->when($code_cost != "0", function ($query) use ($code_cost) {
-                return $query->where('jd.code_cost', $code_cost);
-            })
-            ->when($code_div != "0", function ($query) use ($code_div) {
-                return $query->where('jd.code_div', $code_div);
-            })
-            ->first();
+        // Gabungkan semua akun yang ada di saldo awal dan transaksi
+        $allAccounts = $beginningBalance->pluck('account_no')->merge($journalDetails->pluck('account_no'))->unique();
 
-        $currentYearModalAmount = $currentYearModal->modal_amount ?? 0;
-
-        // Combine all accounts from beginning balance and transactions
-        $allAccounts = $beginningBalance->pluck('account_no')
-            ->merge($journalDetails->pluck('account_no'))
-            ->unique();
-
-        // Process data for report
-        $reportData = $allAccounts->map(function ($accountNo) use ($journalDetails, $beginningBalance, $currentYearModalAmount) {
+        // Proses data untuk laporan
+        $reportData = $allAccounts->map(function ($accountNo) use ($journalDetails, $beginningBalance) {
             $items = $journalDetails->where('account_no', $accountNo);
-            $accountName = $items->first()->account_name ?? DB::table('tb_account_list')
-                ->where('account_no', $accountNo)
-                ->value('account_name') ?? 'Unknown';
+            $beginBalance = $beginningBalance->firstWhere('account_no', $accountNo)?->beginning_balance ?? 0;
+            $d_c = $beginningBalance->firstWhere('account_no', $accountNo)?->d_c ?? 'D';
 
-            $beginBalanceInfo = $beginningBalance->where('account_no', $accountNo)->first();
-            $d_c = $beginBalanceInfo->d_c ?? 'D';
+            $accountName = $items->first()->account_name ?? DB::table('tb_account_list')->where('account_no', $accountNo)->value('account_name') ?? 'Unknown';
 
             $transactions = [];
-            $beginBalanceValue = $beginningBalance->where('account_no', $accountNo)->sum('beginning_balance');
+            $currentBalance = $beginBalance;
 
-            // Khusus 3202.0001, gunakan nilai dari perhitungan tahun berjalan
-            if ($accountNo == '3202.0001') {
-                $beginBalanceValue = $currentYearModalAmount;
-            }
-
+            // BEGINNING BALANCE (SALDO AWAL)
             $transactions[] = (object) [
                 'formatted_date' => '',
                 'journal_no' => '',
@@ -506,31 +435,20 @@ class RptGenLedSinaController extends Controller
                 'description_detail' => 'BEGINNING BALANCE',
                 'debit' => 0,
                 'kredit' => 0,
-                'ending_balance' => abs($beginBalanceValue),
-                'dc' => ($beginBalanceValue >= 0) ? $d_c : ($d_c == 'D' ? 'C' : 'D'),
+                'ending_balance' => abs($currentBalance),
+                'dc' => $d_c,
                 'is_subtotal' => false,
             ];
 
-            // Group transactions by code_cost
-            $groupedTransactions = $items->sortBy('code_cost')->groupBy('code_cost');
-
-            $totalDebit = 0;
-            $totalCredit = 0;
-            $totalEndingBalance = $beginBalanceValue;
+            // Kelompokkan transaksi berdasarkan code_cost
+            $groupedTransactions = $items->groupBy('code_cost');
 
             foreach ($groupedTransactions as $codeCost => $group) {
-                // Get beginning balance for this cost center group
-                $beginBalanceForCost = $beginningBalance
-                    ->where('account_no', $accountNo)
-                    ->where('code_cost', $codeCost)
-                    ->sum('beginning_balance');
-                
-                $currentBalance = $beginBalanceForCost;
                 $subTotalDebit = 0;
                 $subTotalCredit = 0;
 
                 foreach ($group as $transaction) {
-                    // Calculate running balance
+                    // Hitung saldo berjalan
                     if ($d_c == 'D') {
                         $currentBalance += ($transaction->debit ?? 0) - ($transaction->kredit ?? 0);
                     } else {
@@ -556,18 +474,7 @@ class RptGenLedSinaController extends Controller
                     $subTotalCredit += $transaction->kredit;
                 }
 
-                $firstGenAcc = (int) substr((string) $accountNo, 0, 1);
-                // Update totals
-                $totalDebit += $subTotalDebit;
-                $totalCredit += $subTotalCredit;
-                if ($firstGenAcc == "1" || $firstGenAcc == "2" || $firstGenAcc == "3") {
-                    $totalEndingBalance = $currentBalance;
-                }else{
-                    $totalEndingBalance = $totalDebit - $totalCredit;
-                }                
-                // $totalEndingBalance = $currentBalance;
-
-                // Sub Total per cost center group
+                // Sub Total per kelompok cost center
                 $transactions[] = (object) [
                     'formatted_date' => '',
                     'journal_no' => '',
@@ -582,14 +489,26 @@ class RptGenLedSinaController extends Controller
                 ];
             }
 
+            // Hitung total debit dan kredit
+            $totalDebit = $items->sum('debit');
+            $totalCredit = $items->sum('kredit');
+            
+            // Hitung saldo akhir
+            $endingBalance = $beginBalance;
+            if ($d_c == 'D') {
+                $endingBalance += $totalDebit - $totalCredit;
+            } else {
+                $endingBalance += $totalCredit - $totalDebit;
+            }
+
             return [
                 'account_no' => $accountNo,
                 'account_name' => $accountName,
-                'beginning_balance' => $beginBalanceValue,
+                'beginning_balance' => $beginBalance,
                 'debit' => $totalDebit,
                 'credit' => $totalCredit,
-                'ending_balance' => abs($totalEndingBalance),
-                'dc' => ($totalEndingBalance >= 0) ? $d_c : ($d_c == 'D' ? 'C' : 'D'),
+                'ending_balance' => abs($endingBalance),
+                'dc' => ($endingBalance >= 0) ? $d_c : ($d_c == 'D' ? 'C' : 'D'),
                 'transactions' => $transactions,
             ];
         })->sortBy('account_no');
@@ -597,11 +516,11 @@ class RptGenLedSinaController extends Controller
         // Hitung total debit, kredit, dan saldo akhir untuk semua akun
         $data['totalDebit'] = $reportData->sum('debit');
         $data['totalCredit'] = $reportData->sum('credit');
-        $data['totalBalance'] = $data['totalDebit'] - $data['totalCredit'];
+        $data['totalBalance'] = $reportData->sum(function ($account) {
+            return ($account['dc'] == 'D' ? 1 : -1) * $account['ending_balance'];
+        });
 
-        if ($data['totalDebit'] == $data['totalCredit']) {
-            $data['totalBalance'] = 0;
-        }
+        // $data['totalBalance'] = (($data['totalDebit'] - $data['totalCredit']) + $reportData->sum('beginning_balance'));
         $data['reportData'] = $reportData;
 
         $tgl = now()->format('Ymd_His');

@@ -58,49 +58,33 @@ class JournalSinaController extends Controller
 
     public function journalDetailSina_data(Request $request)
     {
-        try {
-            $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
-                                    ->where('user_acc_period', Auth::user()->username)
-                                    ->first(); // Fetch a single record
-            
-            if (!$getYearActive) {
-                return response()->json(['data' => []]);
-            }
-            $syear = $getYearActive->year;
+        $getYearActive = TempAccountingPeriodSinaModel::select('year', 'code_period')
+                                ->where('user_acc_period', Auth::user()->username)
+                                ->first(); // Fetch a single record
+        $syear = $getYearActive->year;
 
-            $no_jjrc = $request->cpx.$request->journal_jrc_no;
-            $JournalHeaderId = JournalHeaderSinaModel::select('id_journal_head')
-                                    ->where('journal_jrc_no', $no_jjrc)
-                                    ->where('code_jgr', $request->code_jgr)
-                                    ->where('code_jrc', $request->code_jrc)
-                                    ->first();
-                                    
-            $jhi = $JournalHeaderId ? $JournalHeaderId->id_journal_head : 0;
-            // Jika tidak ditemukan header journal, kosongkan data
-            if ($jhi == 0) {
-                return response()->json(['data' => []]);
-            }
-            $data = DB::table(DB::raw("(SELECT * FROM tb_journal_detail) as tjd"))
-                    ->join('tb_account_list', 'tjd.account_no', '=', 'tb_account_list.account_no')
-                    ->where('tjd.journal_head_id', $jhi)
-                    ->orderBy('tjd.id_journal_detail', 'ASC')
-                    ->select('tjd.*', 'tb_account_list.account_name')
-                    ->get();
+        $no_jjrc = $request->cpx.$request->journal_jrc_no;
+        $JournalHeaderId = JournalHeaderSinaModel::select('id_journal_head')
+                                ->where('journal_jrc_no', $no_jjrc)
+                                ->where('code_jgr', $request->code_jgr)
+                                ->where('code_jrc', $request->code_jrc)
+                                ->first();
+                                
+        $jhi = $JournalHeaderId ? $JournalHeaderId->id_journal_head : 0;
+        $data = DB::table(DB::raw("(SELECT * FROM tb_journal_detail) as tjd"))
+                ->join('tb_account_list', 'tjd.account_no', '=', 'tb_account_list.account_no')
+                ->where('tjd.journal_head_id', $jhi)
+                ->orderBy('tjd.id_journal_detail', 'ASC')
+                ->select('tjd.*', 'tb_account_list.account_name')
+                ->get();
 
-            // $data = DB::table(DB::raw("(SELECT * FROM tb_journal_detail) as tjd"))
-            //         ->where('journal_head_id', $jhi)
-            //         ->orderBy('id_journal_detail', 'ASC');
-            
-            return Datatables::of($data)
-                            ->addIndexColumn()
-                            ->make(true);
-        } catch (\Exception $e) {
-            // Log error ke storage/logs/laravel.log
-            Log::error('Error loading journalDetailSina_data: ' . $e->getMessage());
-
-            // Tetap kembalikan data kosong agar DataTables tidak error
-            return response()->json(['data' => []]);
-        }
+        // $data = DB::table(DB::raw("(SELECT * FROM tb_journal_detail) as tjd"))
+        //         ->where('journal_head_id', $jhi)
+        //         ->orderBy('id_journal_detail', 'ASC');
+        
+        return Datatables::of($data)
+                        ->addIndexColumn()
+                        ->make(true);
     }
 
     public function journalSina_cjgr($c_jgr)
@@ -217,7 +201,7 @@ class JournalSinaController extends Controller
             'journal_jrc_no' => $no_jjrc,                    
             'code_period' => $request->cpx,
             'journal_date' => $request->journal_date,
-            'due_date' => $request->journal_date,
+            'due_date' => $request->due_date,
             'description' => $request->description,
             'created_by' => Auth::user()->name
         ]);
@@ -236,7 +220,7 @@ class JournalSinaController extends Controller
 
         // Update the user's details
         $journalSinaUpdate->journal_date = $request->input('journal_date');
-        $journalSinaUpdate->due_date = $request->input('journal_date');
+        $journalSinaUpdate->due_date = $request->input('due_date');
         $journalSinaUpdate->description = $request->input('description');      
 
         // Save the updated journalSinaUpdateModel 
@@ -324,7 +308,7 @@ class JournalSinaController extends Controller
             'journal_head_id' => $jhi,                    
             'code_period' => $request->cpx,
             'journal_date' => $request->journal_date,
-            'due_date' => $request->journal_date,
+            'due_date' => $request->due_date,
             'general_account' => $request->general_account,
             'account_no' => $request->account_no,
             'code_cost' => $request->code_cost,
@@ -363,7 +347,7 @@ class JournalSinaController extends Controller
         $journalDetailSinaUpdate = JournalDetailSinaModel::where('id_journal_detail', $id_jd)
                                                         ->firstOrFail();
         $journalDetailSinaUpdate->journal_date = $request->input('journal_date');
-        $journalDetailSinaUpdate->due_date = $request->input('journal_date');    
+        $journalDetailSinaUpdate->due_date = $request->input('due_date');    
         $journalDetailSinaUpdate->general_account = $request->input('general_account');
         $journalDetailSinaUpdate->account_no = $request->input('account_no');
         $journalDetailSinaUpdate->code_cost = $request->input('code_cost');

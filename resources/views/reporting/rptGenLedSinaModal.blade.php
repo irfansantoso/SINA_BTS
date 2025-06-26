@@ -73,15 +73,40 @@
 
         @foreach ($account['transactions'] as $transaction)
         <tr>
-            <td style="font-size: 8; text-align: center;">{{ $transaction->formatted_date }}</td>
-            <td style="font-size: 8; text-align: left;">{{ $transaction->journal_no }}</td>
-            <td style="font-size: 8; text-align: center;">{{ $transaction->code_cost }}</td>
-            <td style="font-size: 8; text-align: center;">{{ $transaction->code_div }}</td>
-            <td style="font-size: 8; text-align: left;">{{ $transaction->description_detail }}</td>
-            <td style="font-size: 8; text-align: right;">{{ number_format($transaction->debit, 2, ',', '.') }}</td>
-            <td style="font-size: 8; text-align: right;">{{ number_format($transaction->kredit, 2, ',', '.') }}</td>
-            <td style="font-size: 8; text-align: right;">{{ number_format($transaction->ending_balance, 2, ',', '.') }}</td>
-            <td style="font-size: 8; text-align: center;">{{ $transaction->dc }}</td>
+            @if ($transaction->is_subtotal)
+                <!-- Style untuk Sub Total Cost -->
+                <td colspan="5" style="font-size: 8; text-align: right; font-weight: bold;">
+                    {{ $transaction->description_detail }}
+                </td>
+                <td style="font-size: 8; text-align: right; font-weight: bold;">
+                    {{ number_format($transaction->debit, 2, ',', '.') }}
+                </td>
+                <td style="font-size: 8; text-align: right; font-weight: bold;">
+                    {{ number_format($transaction->kredit, 2, ',', '.') }}
+                </td>
+                <td style="font-size: 8; text-align: right; font-weight: bold;">
+                    {{ number_format($transaction->ending_balance, 2, ',', '.') }}
+                </td>
+                <td style="font-size: 8; text-align: center; font-weight: bold;">
+                    {{ $transaction->dc }}
+                </td>
+        </tr>
+        <tr>
+            <td colspan="9">&nbsp;</td>
+        </tr>
+            @else
+        <tr>
+                <!-- Style normal untuk transaksi -->
+                <td style="font-size: 8; text-align: center;">{{ $transaction->formatted_date }}</td>
+                <td style="font-size: 8; text-align: left;">{{ $transaction->journal_no }}</td>
+                <td style="font-size: 8; text-align: center;">{{ $transaction->code_cost }}</td>
+                <td style="font-size: 8; text-align: center;">{{ $transaction->code_div }}</td>
+                <td style="font-size: 8; text-align: left;">{{ $transaction->description_detail }}</td>
+                <td style="font-size: 8; text-align: right;">{{ number_format($transaction->debit, 2, ',', '.') }}</td>
+                <td style="font-size: 8; text-align: right;">{{ number_format($transaction->kredit, 2, ',', '.') }}</td>
+                <td style="font-size: 8; text-align: right;">{{ number_format($transaction->ending_balance, 2, ',', '.') }}</td>
+                <td style="font-size: 8; text-align: center;">{{ $transaction->dc }}</td>
+            @endif
         </tr>
         @endforeach
         <tr>
@@ -90,10 +115,10 @@
             </td>
         </tr>
         <tr>
-            <td colspan="5" style="font-size: 8; text-align: right;">Sub Total :</td>
-            <td style="font-size: 8; text-align: right;">{{ number_format($account['debit'], 2, ',', '.') }}</td>
-            <td style="font-size: 8; text-align: right;">{{ number_format($account['credit'], 2, ',', '.') }}</td>
-            <td style="font-size: 8; text-align: right;">{{ number_format($account['ending_balance'], 2, ',', '.') }}</td>
+            <td colspan="5" style="font-size: 8; text-align: right; font-weight: bold;">Sub Total :</td>
+            <td style="font-size: 8; text-align: right; font-weight: bold;">{{ number_format($account['debit'], 2, ',', '.') }}</td>
+            <td style="font-size: 8; text-align: right; font-weight: bold;">{{ number_format($account['credit'], 2, ',', '.') }}</td>
+            <td style="font-size: 8; text-align: right; font-weight: bold;">{{ number_format($account['ending_balance'], 2, ',', '.') }}</td>
             <td>&nbsp;</td>
         </tr>
         @endforeach

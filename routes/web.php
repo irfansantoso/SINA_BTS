@@ -16,6 +16,7 @@ use App\Http\Controllers\Tables\JournalSourceCodeSinaController;
 use App\Http\Controllers\Forms\JournalSinaController;
 use App\Http\Controllers\Reporting\RptGenLedSinaController;
 use App\Http\Controllers\Reporting\RptTrBalanceSinaController;
+use App\Http\Controllers\Reporting\RptNeracaSinaController;
 use App\Http\Controllers\Reporting\RptTbSummarySinaController;
 use App\Http\Controllers\Email\ContractController;
 
@@ -141,6 +142,11 @@ Route::get('rptTrBalanceSina',[RptTrBalanceSinaController::class, 'rptTrBalanceS
 Route::get('rptTrBalanceSina/setPeriode/{month}/{year}', [RptTrBalanceSinaController::class, 'rptTrBalanceSina_setPeriode'])->name('rptTrBalanceSina.setPeriode');
 Route::get('rptTrBalanceSinaModal/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_div}', [RptTrBalanceSinaController::class, 'rptTrBalanceSina_modal'])->name('rptTrBalanceSinaModal')->middleware('auth');
 Route::get('rptTrBalanceSinaXls/{m_date}/{y_date}/{acc_no}/{acc_no_end}/{code_div}', [RptTrBalanceSinaController::class, 'rptTrBalanceSina_xls'])->name('rptTrBalanceSinaXls')->middleware('auth');
+
+Route::get('rptNeracaSina',[RptNeracaSinaController::class, 'rptNeracaSina_browse'])->name('rptNeracaSina')->middleware('auth');
+Route::get('rptNeracaSina/setPeriode/{month}/{year}', [RptNeracaSinaController::class, 'rptNeracaSina_setPeriode'])->name('rptNeracaSina.setPeriode');
+Route::get('rptNeracaSinaModal/{year}', [RptNeracaSinaController::class, 'rptNeracaSina_modal'])->name('rptNeracaSinaModal')->middleware('auth');
+Route::get('rptNeracaSinaXls/{year}', [RptNeracaSinaController::class, 'rptNeracaSina_xls'])->name('rptNeracaSinaXls')->middleware('auth');
 
 Route::get('rptTbSummarySina',[RptTbSummarySinaController::class, 'rptTbSummarySina_browse'])->name('rptTbSummarySina')->middleware('auth');
 Route::get('rptTbSummarySina/setPeriode/{month}/{year}', [RptTbSummarySinaController::class, 'rptTbSummarySina_setPeriode'])->name('rptTbSummarySina.setPeriode');
